@@ -1,0 +1,21 @@
+[project]
+name = "jepa-identifiability-boundary"
+version = "0.1.0"
+description = "Empirical boundary map of latent identifiability in JEPA-style models (Klindt-LeCun-Balestriero theorem empiricized)."
+requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "scipy",
+    "scikit-learn",
+    "matplotlib",
+    "tqdm",
+    "pytest",
+]
+
+[project.scripts]
+gen-worlds = "jepa_id.gen_worlds:main"
+run-sweep = "jepa_id.run_sweep:main"
+analyze-sweep = "jepa_id.analyze_sweep:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
