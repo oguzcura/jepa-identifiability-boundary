@@ -92,7 +92,26 @@ Designing the adapted metric = a real, citable contribution, not a footnote.
 
 Two papers landed within two weeks of the theorem in mid-2026; the **HMM-correspondence paper (Aug 2026)** is the live threat to L2. Mitigation: **L0+L1 fast-pass in week 1** (before polish), staged launches, and an early frozen pre-registration so a competitor landing later doesn't invalidate our claim of independent discovery.
 
-## 10. Immediate next actions (pending approval)
+## 11. The "Interventional/Counterfactual JEPA" reframe — checked live 2026-09-06 (do NOT claim novelty here)
+
+A proposed "revolutionary" reframe — *"the model shouldn't predict the future, it should predict what survives intervention"* (Interventional Predictive Learning / Counterfactual JEPA; "prediction identifies histories, intervention identifies worlds") — was stress-tested against live arXiv. **The principle is NOT new; it is the founding premise of causal representation learning (CRL), and it has already been brought into the JEPA lane specifically:**
+
+| Paper | Date | Why it pre-empts the reframe |
+|---|---|---|
+| **Interventional Causal Representation Learning** (arXiv:2209.11924) | Sep 2022 | Proves latent factors identifiable up to permutation/scaling given perfect *do* interventions. The "observationally equivalent but interventionally distinguishable" concept = CRL's core, since 2022. |
+| **Nonparametric Identifiability of CR from Unknown Interventions** (arXiv:2306.00542) | Jun 2023 | General nonparametric CRL from unknown interventions, with irresolvable-ambiguity characterization. |
+| **General Identifiability & Achievability for CRL** (arXiv:2310.15450); **Identifying Representations for Intervention Extrapolation** (2310.04295); linear CRL multi-node (2406.05937) | 2023–24 | The interventional-identifiability theory is mature and deep. |
+| **On the Identifiability of Controlled World Models** (arXiv:2607.22430) | **Jul 24 2026** | **The direct hit**: joint identifiability condition (representation + transition) for *action-conditioned* LeJEPA-style world models. Proves the predictive objective recovers controlled dynamics when their condition holds. Scope: **Gaussian latent states** → the non-Gaussian/discrete *controlled* case is the residue that may remain open. |
+| **C-JEPA** (arXiv:2602.11389) | Feb 2026 | "Counterfactual-style" object-level latent masking; ~20% counterfactual-reasoning gains. The *name* "counterfactual JEPA" territory is taken. |
+| **UWM-JEPA** (arXiv:2605.25313) | May 2026 | Belief-space JEPA steering between futures "under counterfactual actions". |
+| **DSGE as a Structured World Model: Benchmarking Counterfactual Generalization in Economic Worlds** (arXiv:2607.03144) | Jul 2026 | Benchmarks world models (incl. JEPA) on counterfactual generalization — the "eval under intervention" instrument partially exists already. |
+| **UniJEPA** ×2 (2510.10642 robotics; 2608.07409 visual) | 2025–26 | Architecture space crowded. |
+
+**Verdict:** a reviewer who knows CRL would read "predict under intervention" as rediscovering interventional CRL (2022+) without citing it, and "Counterfactual JEPA" collides with C-JEPA. **Do not build the paper's identity on this reframe.**
+
+**What genuinely remains open (the defensible intersection):** (1) 2607.22430 assumes **Gaussian** latents → the *controlled* (action-conditioned) identifiability question in **discrete/non-Gaussian/rule-governed** worlds appears untested; (2) our empirical **decoupling instrument** (prediction↑/identifiability↓ measured on known-ground-truth worlds) as a *measurement contribution* distinct from CRL's theory and from DSGE's economic benchmark; (3) the L0–L4 ladder itself. Recommended positioning: v2's ladder stays the core; an **action/intervention axis on the discrete levels** (controlled-discrete identifiability) is a possible extension that survives contact with 2607.22430 — cite CRL, 2607.22430, C-JEPA, UWM-JEPA, DSGE prominently, and frame as boundary-mapping, never as a new principle.
+
+
 
 1. **Phases 1/2 of the plan stay** (theory grounding, pre-reg, worlds) but the world list is replaced by the L0–L4 ladder (§2 of plan file).
 2. **Write L0 first** — reproduce their Fig 4a gennorm sweep; gate: our R² peak at α=2 matches theirs (within CI).
