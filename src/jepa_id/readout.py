@@ -50,7 +50,7 @@ def ridge_r2(h: np.ndarray, z: np.ndarray, alpha: float = 1.0,
 def cca_recovery(h: np.ndarray, z: np.ndarray, n_components: int | None = None) -> dict:
     """Top canonical correlations between h and z (geometry-agnostic cross-check)."""
     n_comp = min(h.shape[1], z.shape[1]) if n_components is None else n_components
-    cca = CCA(n_components=n_comp)
+    cca = CCA(n_components=n_comp, max_iter=2000)
     cca.fit(h, z)
     h_c, z_c = cca.transform(h, z)
     corrs = []
@@ -183,3 +183,26 @@ def evaluate_identifiability(h: np.ndarray, z: np.ndarray, zc: np.ndarray | None
         out["purity"] = cluster_purity(h, zc, seed=seed)
         out["adj_rand"] = adjusted_rand(h, zc, seed=seed)
     return out
+
+
+def discrete_summary(h: np.ndarray, zc: np.ndarray, seed: int = 0) -> dict:
+    """Per-dim categorical readouts (mean over latent dims).
+
+    Mirrors the per-dim structure of ridge R^2 for continuous targets: the
+    discrete worlds (L1-L4) carry a categorical target per latent dim, and
+    recovery is averaged across dims rather than collapsing to column 0.
+    """
+    zc = np.asarray(zc)
+    if zc.ndim == 1:
+        zc = zc.reshape(-1, 1)
+    d = zc.shape[1]
+    accs, amis, puris = [], [], []
+    for j in range(d):
+        lab = zc[:, j]
+        accs.append(linear_probe_acc(h, lab, seed=seed))
+        amis.append(ami(None, h, lab, seed=seed))
+        puris.append(cluster_purity(h, lab, seed=seed))
+    return {"linear_probe_acc_mean": float(np.mean(accs)),
+            "ami_mean": float(np.mean(amis)),
+            "purity_mean": float(np.mean(puris)),
+            "per_dim_acc": accs, "per_dim_ami": amis}

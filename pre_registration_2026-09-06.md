@@ -179,3 +179,31 @@ Causal-JEPA, UWM-JEPA, DSGE are cited prominently and framed as boundary-mapping
 as a new principle.
 
 *(No change to H0/H1a/H1b/H2, §4 ladder, §5 models, §6 metrics, §7 design, §8 launch plan.)*
+
+### A2 (2026-09-07) — Stage-1 operationalization (mixing, dim, seeds) per Gate 0b evidence
+Gate 0b (pipeline validation, `notes/gate0b_status.md`) established three instrument facts that
+operationalize §8 Stage 1 without changing any hypothesis, metric, or factorial structure:
+1. **linear g is degenerate for L0** — under linear mixing, R² ≈ 0.99 flat across the entire
+   α-grid (nothing to discriminate), because an affine embedding satisfies alignment trivially.
+   The theorem's own Sec 6.2 uses **nonlinear** mixing. Stage 1 therefore runs `g = nonlinear`
+   (the discriminating regime). The linear arm remains in the full-factorial design for
+   L1–L4 (where discrete structure still breaks linear recovery) and is tracked separately.
+2. **dim 8** is the calibration winner for L0 (emb 8 ≈ obs 8): heavier dims (64) give the model
+   spare Gaussian dims to hide in, diluting the SIGReg distributional penalty; dim 4 is too
+   constrained. Stage 1 uses obs_dim = latent_dim = 8 for L0/L1; the {8, 32} dim factorial
+   remains in Stage 2.
+3. **seeds 0–2 (n=3)** for Stage 1 instead of the §8 "1 seed" fast-pass text: Gate 0b showed
+   per-seed variance is material (peak wanders α∈{2,8} between seeds/configs), and the Stage-1
+   gate requires a CI, not a point estimate. n=3 triples Stage-1 cost but keeps it an overnight
+   batch; n=5 enters at Stage 2 per §7. **Stage-1 gate (restated):** L0 α-sweep (nonlinear g,
+   dim 8, n=3) must show the qualitative Fig-4b shape — recovery peaked in the Gaussian region
+   (α∈[1,4]) and degraded at BOTH heavy-tail (α≤0.5) and uniform (α≥16) extremes — with
+   mean±CI consistent with a peak at α≈2, NOT monotone-in-α and NOT flat.
+4. **Recon objective fixed for discrete worlds:** input-space MSE on one-hot/featurized
+   observations is the natural decoder for categorical x; no change to L0's setup.
+5. **Pure-discrete worlds (L2/L3/L4) report discrete + collapse readouts ONLY.** The pilot
+   exposed an artifact: an all-zero continuous stand-in scores ridge R² = 1.0 (perfect fit of
+   a constant), which is meaningless and would mislead the boundary map. Continuous readouts
+   (ridge/CCA/MLP) are therefore emitted only for L0/L1 (where z is genuinely continuous);
+   L2-L4 recovery is measured by per-dim linear-probe accuracy/AMI/purity + effective rank.
+*(No change to H0/H1a/H1b/H2, §4 ladder, §5 models, §6 metrics, §7 design.)*

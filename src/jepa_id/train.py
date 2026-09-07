@@ -41,6 +41,7 @@ def _fit_scale(world, n: int = 4000, seed: int = 123) -> tuple:
 class TrainConfig:
     world: str = "L0"
     model: str = "jepa"          # jepa | recon | contrastive
+    latent_dim: int = 4          # L0-L3 latent dimensionality
     emb_dim: int = 64
     hidden: int = 256
     depth: int = 2
@@ -67,15 +68,16 @@ def train(cfg: TrainConfig) -> dict:
 
     # Build world
     wcls = WORLD_REGISTRY[cfg.world]
+    nd = cfg.latent_dim
     if cfg.world == "L0":
-        world = wcls(latent_dim=4, alpha=cfg.alpha, g=cfg.mixing, seed=cfg.seed)
-        obs_dim = 4
+        world = wcls(latent_dim=nd, alpha=cfg.alpha, g=cfg.mixing, seed=cfg.seed)
+        obs_dim = nd
     elif cfg.world == "L1":
-        world = wcls(latent_dim=4, K=cfg.K, g=cfg.mixing, seed=cfg.seed)
-        obs_dim = 4
+        world = wcls(latent_dim=nd, K=cfg.K, g=cfg.mixing, seed=cfg.seed)
+        obs_dim = nd
     elif cfg.world == "L2":
-        world = wcls(latent_dim=4, S=cfg.S, g=cfg.mixing, seed=cfg.seed)
-        obs_dim = 4
+        world = wcls(latent_dim=nd, S=cfg.S, g=cfg.mixing, seed=cfg.seed)
+        obs_dim = nd
     else:  # L3, L4
         world = wcls(seed=cfg.seed)
         obs_dim = world.generate(1)["x"].shape[1]
@@ -131,15 +133,16 @@ def evaluate(cfg_ckpt: str, n_eval: int = 2000, seed: int = 1) -> dict:
     world = cfgd["world"]
     wcls = WORLD_REGISTRY[world]
     mixing = cfgd.get("mixing", "nonlinear")
+    nd = cfgd.get("latent_dim", 4)
     if world == "L0":
-        world_obj = wcls(latent_dim=4, alpha=cfgd["alpha"], g=mixing, seed=seed)
-        obs_dim = 4
+        world_obj = wcls(latent_dim=nd, alpha=cfgd["alpha"], g=mixing, seed=seed)
+        obs_dim = nd
     elif world == "L1":
-        world_obj = wcls(latent_dim=4, K=cfgd["K"], g=mixing, seed=seed)
-        obs_dim = 4
+        world_obj = wcls(latent_dim=nd, K=cfgd["K"], g=mixing, seed=seed)
+        obs_dim = nd
     elif world == "L2":
-        world_obj = wcls(latent_dim=4, S=cfgd["S"], g=mixing, seed=seed)
-        obs_dim = 4
+        world_obj = wcls(latent_dim=nd, S=cfgd["S"], g=mixing, seed=seed)
+        obs_dim = nd
     else:
         world_obj = wcls(seed=seed)
         obs_dim = world_obj.generate(1)["x"].shape[1]
@@ -161,7 +164,36 @@ def evaluate(cfg_ckpt: str, n_eval: int = 2000, seed: int = 1) -> dict:
     if z.ndim == 1:
         z = z.reshape(-1, 1)
 
-    out = evaluate_identifiability(h, z, seed=seed)
+    # discrete ground truth per world: zK (L1 bins), z categorical (L2/L3/L4);
+    # L0 stays continuous. Continuous targets are only meaningful for L0/L1 —
+    # ridge R^2 on integer codes (or an all-zero stand-in) is meaningless and
+    # artifact-prone (R^2 of a constant target = 1.0), so pure-discrete worlds
+    # report discrete + collapse readouts only.
+    from jepa_id.readout import discrete_summary, collapse_metrics
+    zc = None
+    continuous_meaningful = world in ("L0", "L1")
+    if world == "L1":
+        zc = d["zK"]
+    elif world in ("L2", "L3", "L4"):
+        zc = z if np.issubdtype(np.asarray(z).dtype, np.integer) else d.get("zK")
+
+    if continuous_meaningful:
+        out = evaluate_identifiability(h, z, zc=zc, seed=seed)
+    else:
+        # discrete-only path: no ridge/CCA/MLP on an artificial constant target
+        out = {"n": len(h), "collapse": collapse_metrics(h)}
+        if zc is not None:
+            disc = discrete_summary(h, zc, seed=seed)
+            out["discrete"] = disc
+            out["linear_probe_acc_mean"] = disc["linear_probe_acc_mean"]
+            out["ami_mean"] = disc["ami_mean"]
+            out["purity_mean"] = disc["purity_mean"]
+    if zc is not None and continuous_meaningful:
+        disc = discrete_summary(h, zc, seed=seed)
+        out["discrete"] = disc
+        out["linear_probe_acc_mean"] = disc["linear_probe_acc_mean"]
+        out["ami_mean"] = disc["ami_mean"]
+        out["purity_mean"] = disc["purity_mean"]
     # prediction loss (decoupling plot): mse on objective on held-out data
     with T.no_grad():
         xp = _standardize(T.tensor(d["x_prime"], dtype=T.float32), xmu, xsd)

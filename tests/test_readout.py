@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 from jepa_id.readout import (
     ridge_r2, cca_recovery, linear_probe_acc, ami, cluster_purity,
     adjusted_rand, collapse_metrics, mlp_probe_r2, evaluate_identifiability,
+    discrete_summary,
 )
 
 
@@ -122,3 +123,24 @@ class TestDispatcher:
         out = evaluate_identifiability(h, np.zeros((len(h), 1)), zc=labels)
         assert out["linear_probe_acc"] > 0.98
         assert out["ami"] > 0.9
+
+    def test_discrete_summary_multidim_mean(self):
+        # 2 latent dims of labels, both perfectly recoverable from h[:, ::2]
+        rng = np.random.default_rng(7)
+        n = 800
+        zc = rng.integers(0, 4, size=(n, 2))
+        # h separates each dim along different coordinate pairs
+        h = np.zeros((n, 4))
+        for j in range(2):
+            for c in range(4):
+                m = zc[:, j] == c
+                h[m, 2 * j] = c
+                h[m, 2 * j + 1] = rng.normal(size=m.sum())
+        out = discrete_summary(h, zc)
+        assert out["linear_probe_acc_mean"] > 0.95
+        assert len(out["per_dim_acc"]) == 2
+        # AMI floor: KMeans with k=4 over the JOINT h-space cannot be
+        # simultaneously correct on both independent dims, so per-dim AMI is
+        # capped well below 1 even at perfect linear recoverability — the
+        # linear probe (which selects dims) is the primary metric.
+        assert out["ami_mean"] > 0.4
