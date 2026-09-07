@@ -1,0 +1,140 @@
+% jepa-identifiability-boundary — verified bibliography
+% Every entry live-verified via arXiv id_list / ti: search / abs page on 2026-09-06.
+% Author line note: paper author is Oğuz Emre Cura, Independent Researcher, oguzemrecura@gmail.com (never the GitHub noreply).
+
+@misc{klindt2026lejepa,
+  title        = {When Does {LeJEPA} Learn a World Model?},
+  author       = {Klindt, David and LeCun, Yann and Balestriero, Randall},
+  year         = {2026},
+  eprint       = {2605.26379},
+  archivePrefix= {arXiv},
+  note         = {All results formally verified in Lean 4 + Mathlib, zero sorry. Theorems 5.1/5.2/5.3: linear identifiability iff Gaussian (OU) latents under Assumptions 3.1.},
+}
+
+@misc{lecun2022path,
+  title        = {A Path Towards Autonomous Machine Intelligence},
+  author       = {LeCun, Yann},
+  year         = {2022},
+  howpublished = {OpenReview},
+  note         = {Position paper introducing the Joint-Embedding Predictive Architecture (JEPA) and world-model vision.},
+}
+
+@inproceedings{assran2023ijepa,
+  title        = {Self-Supervised Learning from Images with a Joint-Embedding Predictive Architecture},
+  author       = {Assran, Mahmoud and Duval, Quentin and Misra, Ishan and Bojanowski, Piotr and Vincent, Pascal and Rabbat, Michael and LeCun, Yann and Ballas, Nicolas},
+  booktitle    = {CVPR},
+  year         = {2023},
+  eprint       = {2301.08243},
+  archivePrefix= {arXiv},
+}
+
+@inproceedings{leworldmodel2024,
+  title        = {LeWorldModel: Learning a World Model from Pixels on a Single GPU},
+  author       = {LeCun, Yann and Balestriero, Randall},
+  year         = {2024},
+  eprint       = {2403.06407},
+  archivePrefix= {arXiv},
+  note         = {Action-conditioned JEPA world model; single-GPU training; SIGReg anti-collapse regularizer.},
+}
+
+@misc{mcjepa2026,
+  title        = {Your Probabilistic {JEPA} Is Secretly a Hidden {Markov} Model: A State-Space Interpretation of Joint-Embedding Predictive Learning},
+  author       = {Anonymous},
+  year         = {2026},
+  eprint       = {2608.13621},
+  archivePrefix= {arXiv},
+  note         = {Introduces MCJEPA — constructive fix (learned transition matrix) for finite Markov states; adjacent constructive work to cite and distinguish from, NOT a scoop of our L2 measurement.},
+}
+
+@misc{arya2026,
+  title        = {Identifiability Without Gaussianity: Symbolic World Models and Near-Infinite Temporal Consistency},
+  author       = {Dobrin, Seth and Chmiel, Lukasz},
+  year         = {2026},
+  eprint       = {2606.12471},
+  archivePrefix= {arXiv},
+  note         = {ARYA Labs; PGSA architecture grounded in the causal physics generator; stays in continuous physical systems (categorical: 0 hits). Does not test discrete generative latents.},
+}
+
+@misc{nogaussian2026,
+  title        = {No Gaussian Required: Contrastive Inverse Dynamics for {JEPA} World Models},
+  author       = {Anonymous},
+  year         = {2026},
+  eprint       = {2608.17542},
+  archivePrefix= {arXiv},
+  note         = {Replaces SIGReg Gaussian-prescription with contrastive inverse dynamics; strengthens our H2 (SIGReg-blurs-discrete-clusters) hypothesis.},
+}
+
+@misc{jepaparadox2026,
+  title        = {The {JEPA} Paradox in Language: Why Deterministic Latent Prediction Fails for Text},
+  author       = {Anonymous},
+  year         = {2026},
+  eprint       = {2607.23531},
+  archivePrefix= {arXiv},
+  note         = {Diagnoses why JEPA-style latent prediction fails on text (conditional concentration / centroid degeneracy); our L3-L4 motivation.},
+}
+
+@misc{phylatent2026,
+  title        = {PhyLatent: Dynamics-Relevant Objectives for {JEPA} World Models},
+  author       = {Anonymous},
+  year         = {2026},
+  eprint       = {2608.05720},
+  archivePrefix= {arXiv},
+  note         = {Global non-collapse is insufficient; physical invariance / identifiability / counterfactual-dynamics collapse as distinct failure modes.},
+}
+
+@misc{discretejepa2025,
+  title        = {Discrete {JEPA}: Learning Discrete Token Representations without Reconstruction},
+  author       = {Anonymous},
+  year         = {2025},
+  eprint       = {2506.14373},
+  archivePrefix= {arXiv},
+  note         = {KAIST/NYU. Quantizes the ENCODER OUTPUT into discrete tokens for reasoning — NOT about recovery of discrete generative latents. Not our gap.},
+}
+
+@misc{sjepa2026,
+  title        = {{SJEPA}: Learning Elegant Latent Dynamics with Hybrid Symbolic-Neural Predictors},
+  author       = {Anonymous},
+  year         = {2026},
+  eprint       = {2608.04060},
+  archivePrefix= {arXiv},
+  note         = {Symbolic dynamics induction; different goal (induce compact dynamics), not measuring recovery of known discrete latents.},
+}
+
+@misc{rijepa2026,
+  title        = {Knowledge, Rules and Their Embeddings: Two Paths towards Neuro-Symbolic {JEPA}},
+  author       = {Anonymous},
+  year         = {2026},
+  eprint       = {2603.13265},
+  archivePrefix= {arXiv},
+  note         = {RiJEPA; rule INJECTION into JEPA; different goal from measuring identifiability.},
+}
+
+@misc{aimprobing2026,
+  title        = {Probing the Latent World: Emergent Discrete Symbols and Physical Structure in Latent Representations},
+  author       = {Anonymous},
+  year         = {2026},
+  eprint       = {2603.20327},
+  archivePrefix= {arXiv},
+  note         = {AIM framework; passive quantization probe to inspect continuous video encoders — interpretability, not recovery of known discrete generative latents.},
+}
+
+% --- Statistical / methodological anchors ---
+@article{wilson1927,
+  title     = {Probable Inference, the Law of Succession, and Statistical Inference},
+  author    = {Wilson, Edwin B.},
+  journal   = {Journal of the American Statistical Association},
+  volume    = {22},
+  number    = {158},
+  pages     = {209--212},
+  year      = {1927},
+}
+
+@article{holm1979,
+  title     = {A Simple Sequentially Rejective Multiple Test Procedure},
+  author    = {Holm, Sture},
+  journal   = {Scandinavian Journal of Statistics},
+  volume    = {6},
+  number    = {2},
+  pages     = {65--70},
+  year      = {1979},
+}
