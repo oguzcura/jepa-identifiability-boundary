@@ -134,6 +134,8 @@ def run_cell(c: dict, device: str) -> dict:
             kw[k] = c[k]
     if "g" in c:
         kw["mixing"] = c["g"]
+    if "sigreg_lambda" in c:
+        kw["sigreg_lambda"] = c["sigreg_lambda"]
     cfg = TrainConfig(**kw)
     train(cfg)
     ev = _jsonable(evaluate(str(CKPT / f"ckpt_{cid}.pt")))

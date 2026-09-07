@@ -49,6 +49,7 @@ class TrainConfig:
     K: int = 8                   # L1 bins
     S: int = 5                   # L2 categories
     mixing: str = "nonlinear"    # linear | nonlinear (spiral mixing; theorem uses nonlinear)
+    amp: float = 0.5             # nonlinear mixing amplitude (0 = linear); milder = easier to invert
     sigreg_lambda: float = 1.0   # SIGReg weight (JEPA only; ignored by recon/contrastive)
     batch_size: int = 256
     steps: int = 2000
@@ -70,7 +71,8 @@ def train(cfg: TrainConfig) -> dict:
     wcls = WORLD_REGISTRY[cfg.world]
     nd = cfg.latent_dim
     if cfg.world == "L0":
-        world = wcls(latent_dim=nd, alpha=cfg.alpha, g=cfg.mixing, seed=cfg.seed)
+        world = wcls(latent_dim=nd, alpha=cfg.alpha, g=cfg.mixing,
+                     amp=getattr(cfg, "amp", 0.5), seed=cfg.seed)
         obs_dim = nd
     elif cfg.world == "L1":
         world = wcls(latent_dim=nd, K=cfg.K, g=cfg.mixing, seed=cfg.seed)
@@ -135,7 +137,8 @@ def evaluate(cfg_ckpt: str, n_eval: int = 2000, seed: int = 1) -> dict:
     mixing = cfgd.get("mixing", "nonlinear")
     nd = cfgd.get("latent_dim", 4)
     if world == "L0":
-        world_obj = wcls(latent_dim=nd, alpha=cfgd["alpha"], g=mixing, seed=seed)
+        world_obj = wcls(latent_dim=nd, alpha=cfgd["alpha"], g=mixing,
+                         amp=cfgd.get("amp", 0.5), seed=seed)
         obs_dim = nd
     elif world == "L1":
         world_obj = wcls(latent_dim=nd, K=cfgd["K"], g=mixing, seed=seed)
