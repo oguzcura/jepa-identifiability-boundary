@@ -162,4 +162,20 @@ RTX 4070). Stage 1 pilot (below) calibrates the true per-run cost before the ful
 
 ## Appendix A — Amendments (append-only)
 
-*(none yet)*
+### A1 (2026-09-07) — Interventional/counterfactual reframe checked; core unchanged
+A proposed reframe — *"predict what survives intervention, not the future"* (Interventional
+Predictive Learning / Counterfactual JEPA) — was stress-tested live. **Verdict: pre-empted.**
+It is the founding premise of Causal Representation Learning (von Kügelgen et al., 2022,
+arXiv:2209.11924), already brought into the JEPA lane by **"On the Identifiability of
+Controlled World Models"** (arXiv:2607.22430, Jul 2026, joint rep+transition identifiability
+for action-conditioned LeJEPA world models), and the name "Counterfactual JEPA" collides with
+**Causal-JEPA** (arXiv:2602.11389). **Therefore: v2's L0–L4 ladder remains the core; we do NOT
+build the paper's identity on this reframe.** The defensible intersection that survives
+contact with 2607.22430: that paper assumes **Gaussian** latents, so the **controlled
+(action-conditioned) identifiability question in discrete/non-Gaussian/rule-governed worlds**
+is the possible open residue — tracked as a *possible extension* (an action/intervention axis
+on the discrete levels), NOT part of the frozen primary hypotheses. CRL, 2607.22430,
+Causal-JEPA, UWM-JEPA, DSGE are cited prominently and framed as boundary-mapping context, never
+as a new principle.
+
+*(No change to H0/H1a/H1b/H2, §4 ladder, §5 models, §6 metrics, §7 design, §8 launch plan.)*
