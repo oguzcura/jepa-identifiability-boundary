@@ -97,23 +97,61 @@ def train(cfg: TrainConfig) -> dict:
     return {"final_loss": rows[-1]["loss"], "steps": cfg.steps, "ckpt": str(ckpt_path)}
 
 
-def main():
-    import argparse
-    p = argparse.ArgumentParser()
-    p.add_argument("--world", default="L0")
-    p.add_argument("--model", default="jepa")
-    p.add_argument("--alpha", type=float, default=2.0)
-    p.add_argument("--steps", type=int, default=2000)
-    p.add_argument("--batch-size", type=int, default=256)
-    p.add_argument("--seed", type=int, default=0)
-    p.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
-    p.add_argument("--emb-dim", type=int, default=64)
-    args = p.parse_args()
-    cfg = TrainConfig(world=args.world, model=args.model, alpha=args.alpha,
-                      steps=args.steps, batch_size=args.batch_size,
-                      seed=args.seed, device=args.device, emb_dim=args.emb_dim)
-    print(json.dumps(train(cfg)))
+def evaluate(cfg_ckpt: str, n_eval: int = 2000, seed: int = 1) -> dict:
+    """Load a trained checkpoint, embed held-out world data, run readouts.
+
+    Returns the full identifiability battery plus prediction loss (the
+    'decoupling' pair: prediction quality vs. identifiability).
+    """
+    import torch as T
+    ckpt = T.load(cfg_ckpt, map_location="cpu", weights_only=False)
+    cfgd = ckpt["cfg"]
+    world = cfgd["world"]
+    wcls = WORLD_REGISTRY[world]
+    if world == "L0":
+        world_obj = wcls(latent_dim=4, alpha=cfgd["alpha"], seed=seed)
+        obs_dim = 4
+    elif world == "L1":
+        world_obj = wcls(latent_dim=4, K=cfgd["K"], seed=seed)
+        obs_dim = 4
+    elif world == "L2":
+        world_obj = wcls(latent_dim=4, S=cfgd["S"], seed=seed)
+        obs_dim = 4
+    else:
+        world_obj = wcls(seed=seed)
+        obs_dim = world_obj.generate(1)["x"].shape[1]
+
+    from jepa_id.models import build_model
+    import inspect
+    sig = inspect.signature(build_model)
+    m = build_model(cfgd["model"], obs_dim=obs_dim, emb_dim=cfgd["emb_dim"],
+                    hidden=cfgd.get("hidden", 256), depth=cfgd.get("depth", 2))
+    m.load_state_dict(ckpt["state_dict"])
+    m.eval()
+
+    d = world_obj.generate(n_eval)
+    x = T.tensor(d["x"], dtype=T.float32)
+    with T.no_grad():
+        h = m.encoder(x).numpy() if cfgd["model"] != "jepa" else m.context(x).numpy()
+    z = d["z"]
+    if z.ndim == 1:
+        z = z.reshape(-1, 1)
+
+    out = evaluate_identifiability(h, z, seed=seed)
+    # prediction loss (decoupling plot): mse on objective on held-out data
+    with T.no_grad():
+        xp = T.tensor(d["x_prime"], dtype=T.float32)
+        loss, *_ = m(x, xp, momentum=False)
+    out["pred_loss"] = float(loss.item())
+    out["world"] = world
+    out["model"] = cfgd["model"]
+    return out
 
 
 if __name__ == "__main__":
-    main()
+    import glob
+    ckpts = sorted(glob.glob("results/*.pt"))
+    print(f"{len(ckpts)} checkpoints found")
+    for ck in ckpts[:3]:
+        print(ck, "->", {k: round(v, 4) if isinstance(v, float) else v
+                         for k, v in evaluate(ck).items() if k not in ("per_dim", "canonical_corrs")})
