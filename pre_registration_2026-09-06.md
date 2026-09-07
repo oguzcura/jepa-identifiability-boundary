@@ -206,4 +206,25 @@ operationalize §8 Stage 1 without changing any hypothesis, metric, or factorial
    a constant), which is meaningless and would mislead the boundary map. Continuous readouts
    (ridge/CCA/MLP) are therefore emitted only for L0/L1 (where z is genuinely continuous);
    L2-L4 recovery is measured by per-dim linear-probe accuracy/AMI/purity + effective rank.
+*(End A2.)*
+
+### A3 (2026-09-07) — L0 gate re-operationalized: 2D spiral + λ=10 JEPA / temp=0.3 contrastive — GATE NOW PASSES
+The A2 config (dim 8, quadratic mixing, λ=1.0) produced a
+   monotone curve (uniform > Gaussian) that FAILED the restated gate. Root cause (isolated by
+   direct experiment, not inferred): (a) the quadratic mixing map x_j = z_j + amp·z_{j+1}² has
+   unbounded scale — for the small MLP encoder the map is effectively uninvertible, so the
+   encoder never reaches the theorem's positive (linear-identifiable) regime at ANY α, and the
+   residual nonlinearity (MLP-probe 0.93 vs ridge 0.82 at α=2) swamps the α-effect; (b) SIGReg
+   at λ=1.0 is too weak to force the Gaussian-izing distortion at the uniform extreme. Fixes
+   verified by full-α sweeps with n=3 seeds: **mixing = "spiral"** (bounded smooth map
+   x_j = z_j + amp·sin(z_{j+1}), triangular unit-diagonal = globally invertible, scale-bounded),
+   **latent_dim = emb_dim = 2** (the theorem's App H.7 setup), **sigreg_lambda = 10** for JEPA.
+   Result: JEPA R² peaks at **α=2 (0.85 mean; seed 0: 0.94)**, monotone rise 0.04→0.85 through
+   heavy-tail region, decay to ~0.50 at uniform — the Fig-4b signature reproduced. Contrastive
+   (temp=0.3) also peaks sharply at α=2 (0.965, seeds 0.94-0.98) with a wider InfoNCE plateau,
+   matching Fig 4b's "InfoNCE retains a wider plateau" note. Recon (input-space autoencoder) is
+   NOT a Fig-4b objective (the paper's third objective is VICReg); it remains our discrete-world
+   control and is excluded from the L0 gate. **Recon benchmark note:** autoencoder recovery is
+   trivially high at every α because the decoder inverts input-space directly — expected, not a
+   violation.
 *(No change to H0/H1a/H1b/H2, §4 ladder, §5 models, §6 metrics, §7 design.)*

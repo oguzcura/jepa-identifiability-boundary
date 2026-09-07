@@ -50,6 +50,7 @@ class TrainConfig:
     S: int = 5                   # L2 categories
     mixing: str = "nonlinear"    # linear | nonlinear (spiral mixing; theorem uses nonlinear)
     amp: float = 0.5             # nonlinear mixing amplitude (0 = linear); milder = easier to invert
+    temperature: float = 0.1     # InfoNCE temperature (contrastive only)
     sigreg_lambda: float = 1.0   # SIGReg weight (JEPA only; ignored by recon/contrastive)
     batch_size: int = 256
     steps: int = 2000
@@ -88,6 +89,7 @@ def train(cfg: TrainConfig) -> dict:
     model = build_model(cfg.model, obs_dim=obs_dim, emb_dim=cfg.emb_dim,
                         hidden=cfg.hidden, depth=cfg.depth,
                         tau=cfg.tau, sigreg_lambda=sigreg_lambda,
+                        temperature=getattr(cfg, "temperature", 0.1),
                         device=device)
     opt = torch.optim.Adam(model.parameters(), lr=cfg.lr)
 

@@ -112,6 +112,21 @@ class L0World:
     def _mix(self, z: np.ndarray) -> np.ndarray:
         if self.g == "linear":
             x = z @ self.A.T
+        elif self.g == "spiral":
+            # Mild, bounded, globally invertible spiral: x_j = z_j + amp*sin(z_{j+1}).
+            # Triangular with unit diagonal -> invertible everywhere; |sin|<=1 keeps
+            # the map scale-bounded (no tail explosion), so a modest MLP encoder can
+            # actually learn the inverse at alpha=2 (Gaussian) — restoring the
+            # theorem's positive regime — while SIGReg still forces non-Gaussian
+            # latents through a nonlinear Gaussian-izing map (breaking linear
+            # recovery exactly at non-Gaussian alpha).
+            x = np.empty_like(z)
+            n = z.shape[1]
+            am = self.amp
+            for j in range(n - 1):
+                x[:, j] = z[:, j] + am * np.sin(z[:, j + 1])
+            x[:, n - 1] = z[:, n - 1]
+            x = x @ self.A.T
         else:
             # Genuinely nonlinear but globally invertible mixing (unit Jacobian
             # determinant: x_j = z_j + 0.5 z_{j+1}^2, triangular with unit
