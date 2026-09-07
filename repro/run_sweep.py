@@ -75,6 +75,28 @@ def stage_cells(stage: str, limit: int | None = None) -> list[dict]:
                     cells.append({"stage": stage, "world": "L1", "K": K,
                                   "g": "nonlinear", "model": model,
                                   "seed": seed, "dim": 8})
+    elif stage == "1b":
+        # Stage 1b (A3 re-run, official gate): L0 all alpha, spiral 2D, 3 seeds.
+        # jepa: sigreg_lambda=10 (SIGReg must actually Gaussian-force); contrastive:
+        # temperature=0.3 (InfoNCE peak at alpha=2). Recon excluded (autoencoder,
+        # not a Fig-4b objective — see Amendment A3).
+        for a in alpha_grid():
+            for model in ["jepa", "contrastive"]:
+                for seed in SEEDS_PILOT:
+                    cells.append({"stage": stage, "world": "L0", "alpha": float(a),
+                                  "g": "spiral", "model": model, "seed": seed,
+                                  "dim": 2, "amp": 1.0,
+                                  "sigreg_lambda": 10.0 if model == "jepa" else 1.0,
+                                  "temperature": 0.3 if model == "contrastive" else 0.1})
+        # L1 discrete bridge re-run with spiral 2D for consistency of the report.
+        for K in K_GRID:
+            for model in ["jepa", "contrastive"]:
+                for seed in SEEDS_PILOT:
+                    cells.append({"stage": stage, "world": "L1", "K": K,
+                                  "g": "spiral", "model": model, "seed": seed,
+                                  "dim": 2, "amp": 1.0,
+                                  "sigreg_lambda": 10.0 if model == "jepa" else 1.0,
+                                  "temperature": 0.3 if model == "contrastive" else 0.1})
     elif stage == "2":
         # Stage 2 (discrete core): L1 (full K x dim x seed) + L2 (S dial)
         for K in K_GRID:
@@ -127,6 +149,7 @@ def run_cell(c: dict, device: str) -> dict:
     cid = cell_id(c)
     kw = {"world": c["world"], "model": c["model"], "seed": c["seed"],
           "latent_dim": c["dim"], "device": device,
+          "emb_dim": c.get("emb", c["dim"]),   # faithful A3: emb == latent dim
           "log_path": str(CKPT / f"train_{cid}.jsonl"),
           "ckpt_path": str(CKPT / f"ckpt_{cid}.pt")}
     for k in ("alpha", "K", "S"):
@@ -136,6 +159,10 @@ def run_cell(c: dict, device: str) -> dict:
         kw["mixing"] = c["g"]
     if "sigreg_lambda" in c:
         kw["sigreg_lambda"] = c["sigreg_lambda"]
+    if "temperature" in c:
+        kw["temperature"] = c["temperature"]
+    if "amp" in c:
+        kw["amp"] = c["amp"]
     cfg = TrainConfig(**kw)
     train(cfg)
     ev = _jsonable(evaluate(str(CKPT / f"ckpt_{cid}.pt")))
