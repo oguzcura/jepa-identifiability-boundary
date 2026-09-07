@@ -99,24 +99,25 @@ def stage_cells(stage: str, limit: int | None = None) -> list[dict]:
                                   "temperature": 0.3 if model == "contrastive" else 0.1})
     elif stage == "2":
         # Stage 2 (discrete core): L1 (full K x dim x seed) + L2 (S dial)
+        # Mixing: spiral (A3) — the quadratic map is uninvertible for small MLPs.
         for K in K_GRID:
             for model in MODELS:
                 for seed in SEEDS_FULL:
                     for dim in DIM_FULL:
                         cells.append({"stage": stage, "world": "L1", "K": K,
-                                      "g": "nonlinear", "model": model,
+                                      "g": "spiral", "model": model, "amp": 1.0,
                                       "seed": seed, "dim": dim})
         for S in S_GRID:
             for model in MODELS:
                 for seed in SEEDS_FULL:
                     for dim in DIM_FULL:
                         cells.append({"stage": stage, "world": "L2", "S": S,
-                                      "g": "nonlinear", "model": model,
+                                      "g": "spiral", "model": model, "amp": 1.0,
                                       "seed": seed, "dim": dim})
         # L3 rule-governed grammar (fixed structure)
         for model in MODELS:
             for seed in SEEDS_FULL:
-                cells.append({"stage": stage, "world": "L3", "g": "nonlinear",
+                cells.append({"stage": stage, "world": "L3", "g": "spiral",
                               "model": model, "seed": seed, "dim": 6})
     elif stage == "3":
         # Stage 3: L4 Turkish morphology (fixed structure)
