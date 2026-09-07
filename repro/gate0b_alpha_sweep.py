@@ -11,12 +11,12 @@ from jepa_id.train import train, TrainConfig, evaluate
 from jepa_id.worlds import alpha_grid
 
 
-def run(device="cuda", steps=1200, seed=0, batch_size=512):
+def run(device="cuda", steps=1200, seed=0, batch_size=512, sigreg_lambda=1.0, emb_dim=64):
     results = []
     for alpha in alpha_grid():
         cfg = TrainConfig(world="L0", model="jepa", alpha=float(alpha),
-                          steps=steps, batch_size=batch_size, emb_dim=64,
-                          seed=seed, device=device)
+                                  steps=steps, batch_size=batch_size, emb_dim=emb_dim,
+                                  seed=seed, device=device, sigreg_lambda=sigreg_lambda)
         tr = train(cfg)
         ev = evaluate(tr["ckpt"], seed=1)
         results.append({
@@ -40,4 +40,6 @@ def run(device="cuda", steps=1200, seed=0, batch_size=512):
 
 if __name__ == "__main__":
     import sys
-    run(device=sys.argv[1] if len(sys.argv) > 1 else "cuda")
+    lam = float(sys.argv[2]) if len(sys.argv) > 2 else 1.0
+    ed = int(sys.argv[3]) if len(sys.argv) > 3 else 64
+    run(device=sys.argv[1] if len(sys.argv) > 1 else "cuda", sigreg_lambda=lam, emb_dim=ed)

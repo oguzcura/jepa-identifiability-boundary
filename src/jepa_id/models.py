@@ -66,12 +66,19 @@ class MLPDecoder(nn.Module):
 # --------------------------------------------------------------------------- #
 @dataclass(eq=False)
 class JepaCore(nn.Module):
-    """JEPA-style latent prediction with EMA target + stop-grad."""
+    """LeJEPA-style latent prediction: alignment + SIGReg, EMA target + stop-grad.
+
+    SIGReg (Sketched Isotropic Gaussian Regularization) forces the context
+    embedding distribution toward an isotropic Gaussian — the condition that
+    makes linear identifiability hold, and whose violation is what breaks it
+    for non-Gaussian worlds (the theorem's mechanism).
+    """
     obs_dim: int
     emb_dim: int = 64
     hidden: int = 256
     depth: int = 2
     tau: float = 0.99          # EMA decay for target encoder
+    sigreg_lambda: float = 1.0  # SIGReg penalty weight
     device: str = "cpu"
 
     def __post_init__(self):
@@ -84,6 +91,41 @@ class JepaCore(nn.Module):
             p.requires_grad_(False)      # target is EMA, not gradient-trained
         self.to(self.device)
 
+    def _sigreg(self, h: torch.Tensor) -> torch.Tensor:
+            """Sketched Gaussian-moment regularization (LeJEPA-style).
+
+            Projects h onto k fixed random directions drawn at init, then penalizes
+            deviation of each 1-D marginal from N(0,1): mean->0, var->1, skew->0,
+            kurt->3. The random sketch MIXES all dimensions, so the model cannot
+            dodge the penalty by hiding non-Gaussian signal in a few dims and
+            filling the rest with Gaussian noise (which would dilute per-dim
+            moment penalties to ~0). This is the mechanism that forces h(z) to be
+            a genuinely nonlinear Gaussian-izing map for non-Gaussian latents,
+            breaking linear identifiability exactly as the theorem predicts.
+            """
+            if not hasattr(self, "_sketch"):
+                            g = torch.Generator(device=h.device).manual_seed(1234)
+                            self._sketch = torch.randn(h.size(1), 32, generator=g, device=h.device)
+                            self._sketch = self._sketch / self._sketch.norm(dim=0, keepdim=True)
+            proj = h @ self._sketch                      # (B, k) mixtures of all dims
+            eps = 1e-6
+            mu = proj.mean(dim=0)
+            pc = proj - mu
+            var = pc.pow(2).mean(dim=0) + eps
+            std = var.sqrt()
+            pn = pc / std
+            skew = pn.pow(3).mean(dim=0)
+            kurt = pn.pow(4).mean(dim=0)
+            cross = (pc.T @ pc) / pc.size(0) - torch.eye(32, device=h.device)
+            pen = (
+                (var - 1.0).pow(2).mean()
+                + skew.pow(2).mean()
+                + (kurt - 3.0).pow(2).mean()
+                + cross.pow(2).mean()
+                + mu.pow(2).mean()
+            )
+            return pen
+
     @torch.no_grad()
     def _ema_update(self):
         with torch.no_grad():
@@ -93,13 +135,14 @@ class JepaCore(nn.Module):
                 bt.copy_(bc)
 
     def forward(self, x, x_prime, momentum: bool = True):
-        """Return (loss, h, h_pred, h_target). h = context embedding (used for
-        identifiability readout); loss is the JEPA latent-prediction objective."""
+        """Return (loss, h, h_pred, h_target). loss = alignment + lambda*SIGReg."""
         h = self.context(x)
         with torch.no_grad():                       # stop-grad on target
             h_target = self.target(x_prime)
         h_pred = self.predictor(h)
-        loss = F.mse_loss(h_pred, h_target)
+        align = F.mse_loss(h_pred, h_target)
+        reg = self._sigreg(h)
+        loss = align + self.sigreg_lambda * reg
         if momentum:
             self._ema_update()
         return loss, h, h_pred, h_target

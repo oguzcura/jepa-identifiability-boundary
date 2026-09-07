@@ -92,6 +92,7 @@ class L0World:
     rho: float = 0.9
     alpha: float = 2.0
     g: str = "linear"          # "linear" | "nonlinear"
+    amp: float = 0.5            # nonlinear mixing amplitude (0 = linear)
     obs_noise: float = 0.05
     seed: int = 0
     rng: np.random.Generator = field(init=False, repr=False)
@@ -111,10 +112,22 @@ class L0World:
     def _mix(self, z: np.ndarray) -> np.ndarray:
         if self.g == "linear":
             x = z @ self.A.T
-        else:  # nonlinear: spiral-like per-dimension nonlinearity
-            r = np.linalg.norm(z, axis=1, keepdims=True)
-            th = np.arctan2(z[:, 1], z[:, 0])[:, None]
-            x = np.hstack([r * np.cos(2 * th), r * np.sin(2 * th), z[:, 2:4]])
+        else:
+            # Genuinely nonlinear but globally invertible mixing (unit Jacobian
+            # determinant: x_j = z_j + 0.5 z_{j+1}^2, triangular with unit
+            # diagonal). Strong nonlinearity + no information loss — the
+            # regime where the theorem predicts linear identifiability fails
+            # for non-Gaussian latents (SIGReg Gaussian-izes the embedding,
+            # producing a nonlinear distortion h(z) that linear probes can't
+            # invert).
+            x = np.empty_like(z)
+            n = z.shape[1]
+            am = self.amp
+            x[:, 0] = z[:, 0] + am * z[:, 1] ** 2
+            for j in range(1, n - 1):
+                x[:, j] = z[:, j] + am * z[:, j + 1] ** 2
+            x[:, n - 1] = z[:, n - 1]
+            x = x @ self.A.T
         return x
 
     def generate(self, n_pairs: int) -> dict:
@@ -123,6 +136,10 @@ class L0World:
         z_prime = self._transition(z)
         x = self._mix(z) + self.obs_noise * self.rng.normal(size=(n_pairs, self.latent_dim))
         x_prime = self._mix(z_prime) + self.obs_noise * self.rng.normal(size=(n_pairs, self.latent_dim))
+        # winsorize extreme observations (heavy-tail worlds) — info-preserving
+        # for the bulk, prevents training divergence from rare outliers
+        x = np.clip(x, -10.0, 10.0)
+        x_prime = np.clip(x_prime, -10.0, 10.0)
         return {"z": z, "z_prime": z_prime, "x": x, "x_prime": x_prime}
 
 

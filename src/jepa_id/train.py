@@ -16,11 +16,25 @@ import numpy as np
 import torch
 
 from jepa_id.models import build_model
+from jepa_id.readout import evaluate_identifiability
 from jepa_id.worlds import WORLD_REGISTRY
 
 
 def _to_tensor(arr: np.ndarray, device: str) -> torch.Tensor:
     return torch.tensor(arr, dtype=torch.float32, device=device)
+
+
+def _standardize(x: torch.Tensor, mu: torch.Tensor, sd: torch.Tensor) -> torch.Tensor:
+    """Z-score observations (data-independent scale fix; mixing can create
+    columns with wildly different scales, which destabilizes MLP training)."""
+    return (x - mu) / (sd + 1e-6)
+
+
+def _fit_scale(world, n: int = 4000, seed: int = 123) -> tuple:
+    """Fit per-dim mean/std of observations from a deterministic sample."""
+    d = world.generate(n)
+    x = np.asarray(d["x"], dtype=np.float32)
+    return torch.tensor(x.mean(0), dtype=torch.float32), torch.tensor(x.std(0), dtype=torch.float32)
 
 
 @dataclass
@@ -33,6 +47,8 @@ class TrainConfig:
     alpha: float = 2.0           # L0 gennorm shape (ignored for L1-L4)
     K: int = 8                   # L1 bins
     S: int = 5                   # L2 categories
+    mixing: str = "nonlinear"    # linear | nonlinear (spiral mixing; theorem uses nonlinear)
+    sigreg_lambda: float = 1.0   # SIGReg weight (JEPA only; ignored by recon/contrastive)
     batch_size: int = 256
     steps: int = 2000
     lr: float = 1e-3
@@ -52,22 +68,28 @@ def train(cfg: TrainConfig) -> dict:
     # Build world
     wcls = WORLD_REGISTRY[cfg.world]
     if cfg.world == "L0":
-        world = wcls(latent_dim=4, alpha=cfg.alpha, seed=cfg.seed)
+        world = wcls(latent_dim=4, alpha=cfg.alpha, g=cfg.mixing, seed=cfg.seed)
         obs_dim = 4
     elif cfg.world == "L1":
-        world = wcls(latent_dim=4, K=cfg.K, seed=cfg.seed)
+        world = wcls(latent_dim=4, K=cfg.K, g=cfg.mixing, seed=cfg.seed)
         obs_dim = 4
     elif cfg.world == "L2":
-        world = wcls(latent_dim=4, S=cfg.S, seed=cfg.seed)
+        world = wcls(latent_dim=4, S=cfg.S, g=cfg.mixing, seed=cfg.seed)
         obs_dim = 4
     else:  # L3, L4
         world = wcls(seed=cfg.seed)
         obs_dim = world.generate(1)["x"].shape[1]
 
+    sigreg_lambda = getattr(cfg, "sigreg_lambda", 1.0)
     model = build_model(cfg.model, obs_dim=obs_dim, emb_dim=cfg.emb_dim,
                         hidden=cfg.hidden, depth=cfg.depth,
-                        tau=cfg.tau, device=device)
+                        tau=cfg.tau, sigreg_lambda=sigreg_lambda,
+                        device=device)
     opt = torch.optim.Adam(model.parameters(), lr=cfg.lr)
+
+    # data-independent observation standardization (fixes scale instability)
+    xmu, xsd = _fit_scale(world)
+    xmu, xsd = xmu.to(device), xsd.to(device)
 
     log_path = Path(cfg.log_path.format(**cfg.__dict__))
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -77,8 +99,8 @@ def train(cfg: TrainConfig) -> dict:
     model.train()
     for step in range(cfg.steps):
         d = world.generate(cfg.batch_size)
-        x = _to_tensor(d["x"], device)
-        xp = _to_tensor(d["x_prime"], device)
+        x = _standardize(_to_tensor(d["x"], device), xmu, xsd)
+        xp = _standardize(_to_tensor(d["x_prime"], device), xmu, xsd)
         loss, h, *_ = model(x, xp)
         opt.zero_grad()
         loss.backward()
@@ -108,14 +130,15 @@ def evaluate(cfg_ckpt: str, n_eval: int = 2000, seed: int = 1) -> dict:
     cfgd = ckpt["cfg"]
     world = cfgd["world"]
     wcls = WORLD_REGISTRY[world]
+    mixing = cfgd.get("mixing", "nonlinear")
     if world == "L0":
-        world_obj = wcls(latent_dim=4, alpha=cfgd["alpha"], seed=seed)
+        world_obj = wcls(latent_dim=4, alpha=cfgd["alpha"], g=mixing, seed=seed)
         obs_dim = 4
     elif world == "L1":
-        world_obj = wcls(latent_dim=4, K=cfgd["K"], seed=seed)
+        world_obj = wcls(latent_dim=4, K=cfgd["K"], g=mixing, seed=seed)
         obs_dim = 4
     elif world == "L2":
-        world_obj = wcls(latent_dim=4, S=cfgd["S"], seed=seed)
+        world_obj = wcls(latent_dim=4, S=cfgd["S"], g=mixing, seed=seed)
         obs_dim = 4
     else:
         world_obj = wcls(seed=seed)
@@ -130,7 +153,8 @@ def evaluate(cfg_ckpt: str, n_eval: int = 2000, seed: int = 1) -> dict:
     m.eval()
 
     d = world_obj.generate(n_eval)
-    x = T.tensor(d["x"], dtype=T.float32)
+    xmu, xsd = _fit_scale(world_obj, n=4000)
+    x = _standardize(T.tensor(d["x"], dtype=T.float32), xmu, xsd)
     with T.no_grad():
         h = m.encoder(x).numpy() if cfgd["model"] != "jepa" else m.context(x).numpy()
     z = d["z"]
@@ -140,7 +164,7 @@ def evaluate(cfg_ckpt: str, n_eval: int = 2000, seed: int = 1) -> dict:
     out = evaluate_identifiability(h, z, seed=seed)
     # prediction loss (decoupling plot): mse on objective on held-out data
     with T.no_grad():
-        xp = T.tensor(d["x_prime"], dtype=T.float32)
+        xp = _standardize(T.tensor(d["x_prime"], dtype=T.float32), xmu, xsd)
         loss, *_ = m(x, xp, momentum=False)
     out["pred_loss"] = float(loss.item())
     out["world"] = world
