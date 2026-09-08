@@ -143,6 +143,47 @@ def stage_cells(stage: str, limit: int | None = None) -> list[dict]:
                               "dim": 3, "S": 3, "emb": 6,
                               "sigreg_lambda": 10.0 if model == "jepa" else 1.0,
                               "temperature": 0.3 if model == "contrastive" else 0.1})
+    elif stage == "5":
+        # Stage 5 (R1/A5): L2t moment-matched continuous twins of the stage-2
+        # L2 S-dial — SAME (S, dim, seed, model) cells so L2 vs L2t pairs
+        # directly at matched observable moments. H1a: continuous twin ridge R^2
+        # (primary) + zK acc (same-metric discrete robustness check).
+        for S in S_GRID:
+            for model in MODELS:
+                for seed in SEEDS_FULL:
+                    for dim in DIM_FULL:
+                        cells.append({"stage": stage, "world": "L2t", "arm": "l2t",
+                                      "S": S, "g": "spiral", "model": model,
+                                      "amp": 1.0, "seed": seed, "dim": dim})
+    elif stage == "6":
+        # Stage 6 (A5): VICReg — the faithful fourth objective (Fig-4b trio).
+        # Runs the SAME configs as jepa/contrastive per arm (no sigreg/temp
+        # hyperparams of its own; 25/25/1 weights frozen in the module).
+        # 6a: L0 gate α-sweep (spiral 2D, A3 config) — does VICReg peak at α=2?
+        # 6b: L3 v2 + L2m (stage-4 arms) — non-predictive discrete contrast.
+        # 6c: L2 S-dial (stage-2 arms) + L4 v2 (stage-3 arms) — ladder coverage.
+        for alpha in alpha_grid():
+            for seed in SEEDS_FULL:
+                cells.append({"stage": stage, "world": "L0", "g": "spiral",
+                              "model": "vicreg", "seed": seed, "dim": 2,
+                              "alpha": alpha, "emb": 2})
+        for seed in SEEDS_FULL:
+            for (w, arm, S, dim, extra, emb) in (
+                ("L3", "", None, 3, {"obs_per_pos": 1}, 6),
+                ("L2", "l2m", 3, 3, {}, 6),
+                ("L4", "", None, 3, {}, 3),   # match stage-3 L4 config (emb=dim)
+            ):
+                c = {"stage": stage, "world": w, "model": "vicreg", "seed": seed,
+                     "dim": dim, "emb": emb, **extra}
+                if arm:
+                    c["arm"] = arm
+                if S is not None:
+                    c["S"] = S
+                cells.append(c)
+            for S2 in S_GRID:
+                cells.append({"stage": stage, "world": "L2", "arm": "s2vicreg",
+                              "model": "vicreg", "seed": seed, "dim": 8,
+                              "S": S2, "emb": 8, "g": "spiral", "amp": 1.0})
     else:
         raise ValueError(f"unknown stage: {stage}")
     if limit:
