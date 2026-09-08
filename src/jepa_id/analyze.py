@@ -99,23 +99,37 @@ def paired_t_pval(a: np.ndarray, b: np.ndarray) -> float:
 # --------------------------------------------------------------------------- #
 # R4 decoupling index (A5 §3)
 # --------------------------------------------------------------------------- #
+def recovery_metric(row: dict, stage: str) -> float:
+    """Schema-aware recovery score for a results row.
+
+    Continuous worlds (L0/L1/L2t) nest recovery under ridge.mean (ridge R^2);
+    pure-discrete worlds (L2/L3/L4) emit flat linear_probe_acc_mean. Both are
+    0-1-ish bounded scores of the same role (state recovery).
+    """
+    m = row["metrics"]
+    if "ridge" in m and isinstance(m["ridge"], dict) and "mean" in m["ridge"]:
+        return float(m["ridge"]["mean"])
+    if "linear_probe_acc_mean" in m:
+        return float(m["linear_probe_acc_mean"])
+    if "mlp_control" in m and isinstance(m["mlp_control"], dict):
+        return float(m["mlp_control"].get("mean", np.nan))
+    return float(np.nan)
+
+
 def decoupling_index(rows: list[dict], stage: str) -> dict:
     """Within-stage z-scored prediction-vs-recovery gap per model.
 
     For each model: d_i = z(pred_loss_i) - z(recovery_i) over the stage's cells
-    (prediction = pred_loss, recovery = stage-appropriate primary metric).
+    (prediction = pred_loss, recovery = schema-aware recovery score).
     Positive d = predicts better than stage-average while recovering worse.
     Returns per-model mean d + bootstrap CI + the per-cell values.
     """
-    recovery_metric = "ridge_r2_mean" if stage in ("1", "1b", "pilot") else "linear_probe_acc_mean"
     out = {}
     for model in ("jepa", "recon", "contrastive", "vicreg"):
         cells = [r for r in rows if r.get("model") == model]
         if not cells:
             continue
-        rec = np.array([r["metrics"].get(recovery_metric)
-                        or r["metrics"].get("linear_probe_acc_mean", np.nan)
-                        for r in cells], dtype=float)
+        rec = np.array([recovery_metric(r, stage) for r in cells], dtype=float)
         pred = np.array([r["metrics"].get("pred_loss", np.nan) for r in cells], dtype=float)
         ok = ~np.isnan(rec) & ~np.isnan(pred)
         if ok.sum() < 2:
