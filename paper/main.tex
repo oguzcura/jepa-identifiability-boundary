@@ -353,7 +353,8 @@ $[1,2,2]$ and its per-dimension chance floors ($0.5,0.25,0.25$) exactly, with
 independent dims and no rule (joint $H{=}5$ bits, 32 states --- \emph{harder}
 than L3, biasing \emph{against} our claim). Stage 7 ran 30 fresh cells
 (3 models $\times$ 5 seeds $\times$ \{L2mH, L2mS2\}) paired with the existing
-stage-4 L3 rows at identical hyperparameters.
+stage-4 L3 rows at identical hyperparameters (Table~\ref{tab:h1b},
+Fig.~\ref{fig:h1b}).
 
 \begin{table}[h]\centering\small
 \begin{tabular}{@{}lcccc@{}}
@@ -377,6 +378,15 @@ frozen $\Delta{>}0.2$ bar --- but the directional, control-robust JEPA effect
 is our most reliable positive finding.}}
 \label{tab:h1b}
 \end{table}
+
+\begin{figure}[h]\centering
+\includegraphics[width=0.72\linewidth]{../figures/F4_l3_vs_l2m.png}
+\caption{H1b across objectives, post-A6 control. LeJEPA recovers the rule
+grammar (L3) better than the marginal-matched unstructured control (L2mH,
+per-dim $(2,4,4)$, independent dims); recon and contrastive do not. Bars are
+mean $\pm$~SE over five seeds.}
+\label{fig:h1b}
+\end{figure}
 
 \paragraph{Where the effect lives.}
 Per-dimension readouts (5-seed means) show the stem class --- the

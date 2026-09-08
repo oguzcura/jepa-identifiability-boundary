@@ -185,16 +185,19 @@ def f3(rows: list[dict], out: Path = FIG / "F3_decoupling.png") -> Path:
 # --------------------------------------------------------------------------- #
 def f4(rows: list[dict], out: Path = FIG / "F4_l3_vs_l2m.png") -> Path:
     l3 = [r for r in rows if r.get("world") == "L3"]
-    l2m = [r for r in rows if r.get("world") == "L2" and r.get("arm") == "l2m"]
+    # A6 correction: H1b control is the marginal-matched L2mH (2,4,4) from
+    # stage 7, NOT the old homogeneous L2m S=3 (state-count confounded).
+    l2m = [r for r in rows if r.get("world") == "L2" and r.get("arm") == "l2mh"]
     if not l3 or not l2m:
-        print("F4: no L3/L2m rows"); return out
+        print("F4: no L3/L2mH rows"); return out
     fig, ax = plt.subplots(figsize=(6.5, 5))
     models = [mo for mo in ("jepa", "recon", "contrastive", "vicreg")
-              if any(r.get("model") == mo for r in l3)]
+              if any(r.get("model") == mo for r in l3)
+              and any(r.get("model") == mo for r in l2m)]
     xpos = np.arange(len(models))
     width = 0.36
     for offset, (arm, col, lab) in enumerate(((-width / 2, "#4c72b0", "L3 (rule grammar)"),
-                                              (width / 2, "#dd8452", "L2m (entropy-matched iid)"))):
+                                              (width / 2, "#dd8452", "L2mH (2,4,4) marginal-matched iid"))):
         means, errs = [], []
         for model in models:
             vals_a = np.array([r["metrics"]["linear_probe_acc_mean"] for r in l3
@@ -208,7 +211,7 @@ def f4(rows: list[dict], out: Path = FIG / "F4_l3_vs_l2m.png") -> Path:
     ax.set_xticks(xpos)
     ax.set_xticklabels([MODEL_STYLE[m]["label"] for m in models], rotation=12)
     ax.set_ylabel("recovery (discrete acc_mean, mean ± se over seeds)")
-    ax.set_title("F4: H1b — compositional vs entropy-matched unstructured")
+    ax.set_title("F4: H1b — compositional vs marginal-matched unstructured (A6 control)")
     ax.legend(frameon=False)
     fig.tight_layout()
     fig.savefig(out); plt.close(fig)
