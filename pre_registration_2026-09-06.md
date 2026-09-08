@@ -292,3 +292,36 @@ failed) and x leaks caret_idx/class/flag directly.
    worse-than-stage-average (large positive d). Reported as scatter + per-model mean d with
    bootstrap CI; labeled descriptive (no H-test).
 *(End A5.)*
+### A6 (2026-09-08) — Audit-driven instrument corrections (post-P7 audit `be11f8a`; notes/audit_null_diagnosis_2026-09-08.md)
+1. **Power audit (why the nulls are honest, not underpowered):** per-seed delta sd for H1b jepa
+   = 0.050 → MDE at 80% power (n=5, α=.05 two-sided, paired) = **0.081**; power at the frozen
+   H1b bar 0.2 ≈ 1.000; power at the observed +0.113 = 0.989. n=5 was never the problem: the
+   frozen bars were *calibrated without effect-size data* (pre-pilot, no sensitivity analysis).
+2. **H1a re-scoring (metric-mixing fix):** A5 §2 compared L2 **accuracy** (chance 1/S) against
+   L2t **continuous ridge R²** (chance 0) — two different scales, which manufactured the
+   "partial pass" at S=10 (jepa acc-vs-R² gap +0.487 vs same-metric +0.071). **A6 primary H1a
+   readout = same-metric: L2 discrete acc_mean vs L2t zK (S-bin) acc_mean** — both S-way
+   classification of the same information content. Bar UNCHANGED: >0.3 absolute, CI excluding
+   the bound. Ridge R² demoted to a labeled secondary (continuous-tracking sanity). Under the
+   corrected readout the earlier "PASS at S=10" is re-scored as honest null across all cells
+   (max same-metric gap: contrastive S=10 d8 +0.186; jepa never >0.071).
+3. **H1b control fix (state-space confound):** A4's L2m (homogeneous S=3, d=3) matches only the
+   *mean* marginal entropy: joint 4.75 bits / 27 states vs L3 v2's rule-coupled 3.0 bits / 8
+   states with heterogeneous per-dim cardinalities (2,4,4). The +0.113 could therefore reflect
+   "L3 has fewer states" rather than "rule structure helps." **A6 control = L2mH, a new
+   unstructured world with per-dim state counts (2,4,4)** — identical per-dim marginal
+   entropies [1,2,2], identical per-dim probe chance floors (0.5/0.25/0.25), independent dims
+   (no rule), same generator family/rho/noise as L2, plus **secondary bracket L2m S=2**
+   (joint-entropy-matched: 3 bits, 8 states, all-binary dims — conservative because per-dim
+   probes are easier). Stage-7 cells (30 = 3 models × 5 seeds × {L2mH, L2mS2}), paired with the
+   existing stage-4 L3 cells at identical (model, seed, dim=3, emb=6, λ, τ, g=linear). H1b bar
+   UNCHANGED: R_L3 − R_control > 0.2 with 95% CI excluding 0. L3 v2 is NOT re-run; stage-4 L3
+   rows remain the treatment arm.
+4. **H2 re-scoring (instrument fix):** the frozen rule used cluster purity (KMeans on full h,
+   k=S) which sits near floor for both models on d>2 worlds → gap ≈ 0 by construction. AMI
+   (per-dim, probe-based) shows the predicted recon−jepa direction at low S (+0.106 L2 S=3 d3,
+   +0.131 L3). **A6 primary H2 readout = AMI** (chance-adjusted mutual information), purity
+   demoted to secondary. Bar UNCHANGED: >0.1 with CI excluding 0, L2/L3/L4.
+5. No H0 claim touched (gate passed under A3; VICReg stage-6 analysis stands). All A6
+   re-scorings reuse existing JSONL rows except the new stage-7 control cells.
+*(End A6.)*
