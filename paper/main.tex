@@ -1,0 +1,189 @@
+% jepa-identifiability-boundary — flagship ladder paper (P7 skeleton)
+% Compile: tectonic main.tex   (repo convention; tectonic at ~/bin)
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{xcolor}
+\definecolor{note}{RGB}{150,80,0}
+
+\title{Where Identifiability Breaks: A Discrete Ladder for
+Joint-Embedding Predictive Architectures\\
+{\large Empirical boundary-mapping of the Klindt--LeCun--Balestriero
+Gaussian-identifiability theorem}}
+\author{O\u{g}uz Emre Cura\\
+Independent Researcher\\
+\small \texttt{oguzemrecura@gmail.com} \quad \texttt{github.com/oguzcura}}
+\date{September 2026 --- pre-registered, working draft (skeleton)}
+
+\newtheorem{theorem}{Theorem}
+\usepackage{listings}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+The formal identifiability guarantee for Joint-Embedding Predictive
+Architectures (JEPAs) is Gaussian-bound: \citet{klindt2026lejepa} prove in
+Lean~4 that a LeJEPA objective with sketched Gaussian regularization (SIGReg)
+recovers latent states linearly (up to rotation) \emph{if and only if} the
+latents are Gaussian under a stationary OU transition. Real language,
+perception, and world states are neither Gaussian nor continuous --- they are
+categorical, rule-governed, and discrete. This paper maps \emph{how and where}
+identifiability breaks as the latent regime leaves the theorem's boundary. We
+build a procedurally generated ladder of five worlds from continuous Gaussian
+(OU) through discretized Gaussian, Markov-chain categories, a rule-governed
+vowel-harmony grammar, and a Turkish orthography (caret-rule) lexicon --- each
+with known ground-truth latents --- and train three objectives (LeJEPA/SIGReg,
+input-space reconstruction, InfoNCE) plus VICReg under a frozen, pre-registered
+protocol (amendments A1--A5, append-only). Findings (honest, including nulls):
+\textbf{[to be finalized when stages 5--6 complete]}.
+\end{abstract}
+
+\section*{Pre-registration status}
+Frozen \texttt{pre\_registration\_2026-09-06.md} (hash pinned) with append-only
+amendments A1--A5; all world generators, models, seeds, and decision rules
+committed before the runs they govern. All numbers in this draft come from
+deterministic-seed runs logged to \texttt{results/sweep\_stage*.jsonl}.
+
+\section{Introduction and the theorem's boundary}
+The identifiability question for self-supervised world models: when does the
+embedding recover the true latent state, not merely a statistically convenient
+code? \citet{klindt2026lejepa} give the sharpest formal answer to date ---
+Gaussian latents are necessary and sufficient for linear recovery under their
+objective (Thm.~5.1 forward/backward, Lean-4 verified). Fig.~4b of that paper
+shows the empirical signature: recovery peaks at the Gaussian shape
+($\alpha=2$) and degrades on both sides (heavy tails, uniform).
+
+Two facts make the boundary scientifically live. First, the continuous
+extension is already being mapped by adjacent work (\citet{arya2026};
+see \S~6 related work). Second, \emph{the regime that actual data lives in} ---
+discreteness, categories, rules, orthography --- is where the theorem is silent
+by construction: its assumptions are Gaussian. We therefore ask, with the
+theorem's own instruments (known ground-truth latents, linear-probe readout),
+what happens below the boundary.
+
+\section{World ladder and instruments}
+\begin{table}[h]\centering\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+Level & Generator & Discreteness control & Ground truth $z$ \\
+\midrule
+L0 & Gaussian OU (gennorm $\alpha$) & shape $\alpha \in 2^{-3}\dots 2^5$ &
+continuous \\
+L1 & Discretized Gaussian & bins $K \in \{2,4,8,16\}$ & $z_K$ bins + continuous \\
+L2 & Markov-chain categories & states $S \in \{3,5,10\}$ & categorical $z$ \\
+L2t & Moment-matched continuous twin of L2 & none (support only) & continuous (R1/A5) \\
+L3 & Vowel-harmony rule grammar & rule table (2+ suffix slots) & rule latents (A4 v2) \\
+L4 & Turkish caret-rule lexicon & negative class present & (stem class, caret req., vowel) \\
+\bottomrule
+\end{tabular}
+\caption{Worlds. A4 redesigned L3/L4: non-degenerate entropy, no literal $z$ in
+$x$; A5 added L2t and VICReg.}
+\end{table}
+
+Three shared-MLP objectives on identical paired views $(x,x')$: LeJEPA/SIGReg
+(the theorem's objective), InfoNCE contrastive, input-space reconstruction
+(control), and VICReg (the theorem's third Fig-4b objective; A5). Readout:
+ridge $R^2$ on continuous worlds, per-dim linear-probe accuracy/AMI/purity on
+discrete worlds; collapse (effective rank); prediction loss for the decoupling
+pair. All cells deterministic-seeded, $n=5$ seeds where reported.
+
+\section{Reproduction (sanity gate, F1)}
+\textbf{Official gate: PASS.} Under A3 operationalization (2-D spiral mixing,
+$\lambda=10$ SIGReg for JEPA, $\tau=0.3$ for InfoNCE), the Fig-4b signature
+reproduces: JEPA ridge $R^2$ peaks at $\alpha=2$ (mean 0.85 over 3 seeds;
+seed 0: 0.94), rising monotonically $0.04\to0.85$ through the heavy-tail region
+and decaying to $\sim0.50$ at the uniform extreme. InfoNCE also peaks at
+$\alpha=2$ (0.965) with the wider plateau Fig-4b notes; reconstruction
+plateaus (autoencoder, expected; excluded from the gate under A3).
+\textbf{Honest negative retained:} the original A2 configuration (quadratic
+mixing, dim 8, $\lambda=1$) failed monotonically (uniform 0.885 $>$ Gaussian
+0.815); root cause isolated by experiment --- the quadratic map's unbounded
+scale makes it uninvertible for the small encoder at every $\alpha$, so the
+model never enters the theorem's positive regime. Instrument corrected, not
+selectively reported (stages 1 and 1b both on disk).
+
+\section{Discrete core (stages 2--3)}
+\subsection{L1: the continuous$\to$discrete bridge}
+Recovery of the binned latent collapses monotonically with $K$ (jepa
+$\sim0.96\to0.30$ as $K:2\to16$) while continuous $R^2$ stays flat ($\sim0.90$)
+--- the bridge quantifies the information loss of discretization.
+
+\subsection{L2: categorical states --- the collapse is real and steep}
+\begin{table}[h]\centering\small
+\begin{tabular}{@{}llccc@{}}
+\toprule
+dim & metric & $S{=}3$ & $S{=}5$ & $S{=}10$ \\
+\midrule
+8 & jepa acc & 0.855 & 0.716 & 0.456 \\
+8 & recon acc & & & \\
+8 & contrastive acc & & & \\
+32 & jepa acc & 0.697 & & 0.241 \\
+\bottomrule
+\end{tabular}
+\caption{L2 discrete acc (5 seeds). Full table in final version.}
+\end{table}
+% TODO(stage5): paired L2t rows fill the H1a contrast in the same table.
+
+\subsection{L3 v2 vs L2m (H1b): honest null at the frozen bar}
+Stage-2's L3 arm was withdrawn (A4): the v1 grammar had 1 bit of joint entropy
+($affix = stem$ deterministically) and exposed $z$ as literal columns --- its
+jepa 0.975 was column-copying, not structure-learning. Redesigned L3 v2
+(joint $H = 3.0$ bits, no leak) ran against an entropy-matched i.i.d. control
+L2m ($S = \lfloor 2^{\bar H}\rfloor = 3$):
+
+\begin{table}[h]\centering\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+model & $R_{L3}$ & $R_{L2m}$ & $\Delta$ (95\% CI, paired, $n{=}5$) \\
+\midrule
+jepa & 0.918 & 0.805 & $+0.113\ (0.072, 0.151),\ p{=}0.007$ \\
+recon & 0.808 & 0.878 & $-0.070\ ({-}0.123,\ {-}0.027)$ \\
+contrastive & 0.805 & 0.876 & $-0.071\ ({-}0.111,\ {-}0.030)$ \\
+\bottomrule
+\end{tabular}
+\caption{H1b contrast. JEPA is directionally positive (CI excludes 0, 5/5 seeds)
+but \textbf{fails the frozen $\Delta>0.2$ bar} --- honest null, no claim.
+Recon/contrastive do not benefit from structure at matched entropy.}
+\end{table}
+
+\subsection{L4 v2: Turkish caret rule (stage 3 re-run)}
+The v1 world crashed (constant latent column, no negative class) and leaked
+$z$ into $x$. v2 (A4): matched negative class, surface-only observations.
+15/15 cells run clean, 0 errors. JEPA acc $0.60$--$0.79$ (mean $\sim0.71$)
+--- far below the v1 ceiling, i.e., the redesigned world discriminates.
+% TODO(stage6): add VICReg column.
+
+\section{Decoupling: predicting well without understanding (F3)}
+% TODO(stage5-6): z-scored decoupling index per A5/R4 + scatter.
+
+\section{Discussion}
+\textbf{What is new.} A measurement contribution: the first ladder into the
+discrete/symbolic regime with the theorem's own instruments, plus the
+decoupling instrument (prediction vs state recovery on known ground truth).
+\textbf{What is honest.} H1b at the pre-registered effect size is a null
+(directional only); L4-v2 shows real but bounded recovery. The discrete
+collapse (L1/L2) is steep and survives the moment-matched twin comparison
+\textbf{[stage 5 pending]}. \textbf{What is open.} Controlled/action-conditioned
+discrete identifiability (\citet{controlledWM2026}); entropy-matched
+bounds at larger state counts.
+
+\section*{Related work (abridged)}
+\citet{arya2026}; \citet{mcjepa2026}; \citet{controlledWM2026};
+\citet{klindt2026lejepa}; \citet{assran2023ijepa}. Full verified set in
+\texttt{custom.bib} (21 entries, live-verified 2026-09-06).
+
+\section*{Reproducibility}
+Code/seed/world pins in repo (TDD 75/75 green); results JSONL committed;
+pre-registration frozen + A1--A5 append-only; zero cost (local RTX 4070);
+AI-assisted workflow disclosed per ethics convention; author line per
+author-profile rules.
+
+\bibliographystyle{plainnat}
+\bibliography{custom}
+\end{document}
