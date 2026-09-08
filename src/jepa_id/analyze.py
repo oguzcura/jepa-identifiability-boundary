@@ -119,30 +119,35 @@ def recovery_metric(row: dict, stage: str) -> float:
 def decoupling_index(rows: list[dict], stage: str) -> dict:
     """Within-stage z-scored prediction-vs-recovery gap per model.
 
-    For each model: d_i = z(pred_loss_i) - z(recovery_i) over the stage's cells
-    (prediction = pred_loss, recovery = schema-aware recovery score).
-    Positive d = predicts better than stage-average while recovering worse.
-    Returns per-model mean d + bootstrap CI + the per-cell values.
+    A5 rule: z(pred_loss) and z(recovery) are computed over the STAGE's cells
+    (all models pooled — otherwise each model's mean d is ~0 by construction),
+    then per-model mean of d_i = z_pred_quality_i - z_recovery_i where
+    prediction quality = -z(pred_loss) (higher = better prediction). Positive
+    d = predicts better than stage-average while recovering worse.
     """
+    cells = [r for r in rows if "error" not in r]
+    rec_all = np.array([recovery_metric(r, stage) for r in cells], dtype=float)
+    pred_all = np.array([r["metrics"].get("pred_loss", np.nan) for r in cells],
+                        dtype=float)
+    ok = ~np.isnan(rec_all) & ~np.isnan(pred_all)
+    rec_all, pred_all = rec_all[ok], pred_all[ok]
+    if len(rec_all) < 4:
+        return {}
+    # stage-wide location/scale
+    mu_r, sd_r = rec_all.mean(), rec_all.std() + 1e-12
+    mu_p, sd_p = pred_all.mean(), pred_all.std() + 1e-12
     out = {}
     for model in ("jepa", "recon", "contrastive", "vicreg"):
-        cells = [r for r in rows if r.get("model") == model]
-        if not cells:
+        idx = [i for i, r in enumerate(cells) if r.get("model") == model and ok[i]]
+        if len(idx) < 2:
             continue
-        rec = np.array([recovery_metric(r, stage) for r in cells], dtype=float)
-        pred = np.array([r["metrics"].get("pred_loss", np.nan) for r in cells], dtype=float)
-        ok = ~np.isnan(rec) & ~np.isnan(pred)
-        if ok.sum() < 2:
-            continue
-        rec, pred = rec[ok], pred[ok]
-        # z-scored (higher pred_loss = worse prediction; negate so "better
-        # prediction" is positive like recovery)
-        zp = -(pred - pred.mean()) / (pred.std() + 1e-12)
-        zr = (rec - rec.mean()) / (rec.std() + 1e-12)
+        i = np.array(idx)
+        zr = (rec_all[i] - mu_r) / sd_r
+        zp = -(pred_all[i] - mu_p) / sd_p   # higher = better prediction
         d = zp - zr
         lo, hi = bootstrap_ci(d, seed=model.__hash__() % 2**32)
         out[model] = {"mean_d": float(d.mean()), "ci": (lo, hi),
-                      "per_cell": d.tolist()}
+                      "per_cell": d.tolist(), "n": int(len(d))}
     return out
 
 # --------------------------------------------------------------------------- #
