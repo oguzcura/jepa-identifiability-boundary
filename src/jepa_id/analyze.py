@@ -144,3 +144,88 @@ def decoupling_index(rows: list[dict], stage: str) -> dict:
         out[model] = {"mean_d": float(d.mean()), "ci": (lo, hi),
                       "per_cell": d.tolist()}
     return out
+
+# --------------------------------------------------------------------------- #
+# Row loading + pairing helpers
+# --------------------------------------------------------------------------- #
+import json as _json
+
+
+def load_rows(paths: list[str]) -> list[dict]:
+    rows = []
+    for p in paths:
+        with open(p, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    rows.append(_json.loads(line))
+    return rows
+
+
+def _arm_values(rows: list[dict], model: str, stage: str,
+                world: str | None = None, S: int | None = None,
+                dim: int | None = None, arm: str | None = None) -> dict[int, float]:
+    """Per-seed recovery values for one (model, world/S/dim/arm) cell."""
+    out = {}
+    for r in rows:
+        if r.get("model") != model:
+            continue
+        if world is not None and r.get("world") != world:
+            continue
+        if S is not None and r.get("S") != S:
+            continue
+        if dim is not None and r.get("dim") != dim:
+            continue
+        if arm is not None and r.get("arm") != arm:
+            continue
+        out[r["seed"]] = recovery_metric(r, stage)
+    return out
+
+
+# --------------------------------------------------------------------------- #
+# H-family decision rules (pre-registration section 3, amendments A4-A5)
+# --------------------------------------------------------------------------- #
+def h1b_test(rows: list[dict], model: str = "jepa") -> dict:
+    """H1b (A4): R_L3v2 - R_L2m > 0.2, 95% CI excluding 0. Paired by seed."""
+    l3 = _arm_values(rows, model, "4", world="L3")
+    l2m = _arm_values(rows, model, "4", world="L2", arm="l2m")
+    seeds = sorted(set(l3) & set(l2m))
+    a = np.array([l3[s] for s in seeds])
+    b = np.array([l2m[s] for s in seeds])
+    d = a - b
+    lo, hi = paired_delta_ci(a, b, seed=7)
+    p = paired_t_pval(a, b)
+    return {
+        "model": model, "n_seeds": len(seeds),
+        "R_L3": float(a.mean()), "R_L2m": float(b.mean()),
+        "delta": float(d.mean()), "ci_95": (lo, hi),
+        "d_cohens": float(cohens_d(a, b)),
+        "passed_02_bar": bool(d.mean() > 0.2 and lo > 0),
+        "passed_ci_only": bool(lo > 0),
+        "p_paired_t": float(p),
+        "per_seed_delta": d.tolist(),
+    }
+
+
+def h1a_test(rows_l2: list[dict], rows_l2t: list[dict], S: int, dim: int,
+             model: str = "jepa") -> dict:
+    """H1a: R_L2 below the moment-matched continuous prediction by > 0.3 abs,
+    95% CI excluding that bound. L2t continuous ridge R^2 = the continuous
+    prediction; L2 discrete acc_mean = the discrete reality. Paired by seed."""
+    disc = _arm_values(rows_l2, model, "2", world="L2", S=S, dim=dim)
+    cont = _arm_values(rows_l2t, model, "5", world="L2t", S=S, dim=dim)
+    seeds = sorted(set(disc) & set(cont))
+    a = np.array([disc[s] for s in seeds])   # discrete
+    b = np.array([cont[s] for s in seeds])   # continuous twin
+    gap = b - a  # continuous prediction MINUS discrete recovery (want > 0.3)
+    lo, hi = paired_delta_ci(b, a, seed=11)
+    p = paired_t_pval(b, a)
+    return {
+        "S": S, "dim": dim, "model": model, "n_seeds": len(seeds),
+        "R_L2_discrete": float(a.mean()), "R_L2t_continuous": float(b.mean()),
+        "gap_cont_minus_disc": float(gap.mean()), "ci_95": (lo, hi),
+        "d_cohens": float(cohens_d(b, a)),
+        "passed_03_bar": bool(gap.mean() > 0.3 and lo > 0.3),
+        "p_paired_t": float(p),
+        "per_seed_gap": gap.tolist(),
+    }
