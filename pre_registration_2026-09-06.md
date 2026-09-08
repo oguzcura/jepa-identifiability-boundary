@@ -262,3 +262,33 @@ failed) and x leaks caret_idx/class/flag directly.
    in a new stage (4). No H0/H1a/H2 claims touched — L1/L2/L4-v1 rows unaffected (L2 entropy
    verified healthy: S=5,d=8 joint 14.2 bits).
 *(End A4.)*
+
+### A5 (2026-09-08) — VICReg as the faithful fourth objective; R1 moment-matched twins; R4 decoupling index
+1. **VICReg (models.py `vicreg`, Bardes et al. 2021) added as model #4.** A3 noted recon is an
+   input-space autoencoder and "the paper's third objective is VICReg". VICReg is now implemented
+   (variance-invariance-covariance on the same (x, x_prime) paired views; standard weights
+   λ_inv=25, λ_var=25, λ_cov=1, no EMA, no predictor — collapse prevented by the variance hinge).
+   Its role: **Fig-4b-trio fidelity on the L0 gate** and a second non-predictive contrast on the
+   discrete ladder (VICReg regularizes the embedding toward whitened *but not Gaussian-izing*
+   structure — variance hinge forces std≥1 per dim, covariance decorrelates; it has no explicit
+   Gaussian target, so the theorem's mechanism does not predict a sharp α=2 peak for it).
+   Decision rule (exploratory, no H-test): report VICReg's curve; the pre-registered H0/H1 tests
+   remain defined on jepa/contrastive (predictive/alignment objectives) with recon as
+   input-space control. No hyperparameter tuning of the 25/25/1 weights (standard values frozen).
+2. **R1 moment-matched continuous twins (operationalizes the H0 "moment-matching" language):**
+   each pure-discrete stage gets a continuous twin with matched first and second moments.
+   Concretely for L2m (S states, one-hot marginal p over S): twin = i.i.d. Gaussian mixture with
+   the same per-dim mean/variance and state-weighted components — i.e., z_cont ~ N(μ_s, σ²) with
+   s ~ p and per-state μ_s chosen so the marginal mixture reproduces p's mean/variance per dim;
+   observation map identical to L2 (embedding + noise, same dim). Purpose: separate *discreteness*
+   from *moment statistics* — if L2m recovery ≈ twin recovery at matched moments, the failure is
+   attributable to discreteness (H1a); if twins recover much better, the confound is distributional.
+   Twins are compared on the **continuous ridge R² readout** (valid for continuous z_cont).
+3. **R4 decoupling index (normalized, comparable across worlds):** F3 needs a scale-free
+   prediction-vs-recovery contrast. Define, per (stage, model), the **within-stage z-scored gap**
+   d_i = z(pred_loss_i) − z(recovery_i) over that stage's cells (prediction measured by pred_loss,
+   recovery by the stage's primary recovery metric: ridge R² for L0/L1, acc_mean for L2-L4). A
+   *decoupled* model shows cells where prediction is better-than-stage-average while recovery is
+   worse-than-stage-average (large positive d). Reported as scatter + per-model mean d with
+   bootstrap CI; labeled descriptive (no H-test).
+*(End A5.)*

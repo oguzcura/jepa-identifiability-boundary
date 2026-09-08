@@ -196,10 +196,59 @@ class Contrastive(nn.Module):
         return loss, h, h_p, h_p
 
 
+@dataclass(eq=False)
+class VICReg(nn.Module):
+    """Variance-invariance-covariance (Bardes et al. 2021) — the theorem paper's
+    third Fig-4b objective (their trio: LeJEPA / InfoNCE / VICReg).
+
+    Views = the same paired world observations (x, x_prime) used by every
+    objective. Loss = lambda_inv * invariance (MSE between view embeddings)
+    + lambda_var * variance (hinge keeping per-dim std >= 1)
+    + lambda_cov * covariance (off-diagonal -> 0). No predictor, no EMA:
+    VICReg prevents collapse by its variance term rather than by stop-grad.
+    """
+    obs_dim: int
+    emb_dim: int = 64
+    hidden: int = 256
+    depth: int = 2
+    lambda_inv: float = 25.0
+    lambda_var: float = 25.0
+    lambda_cov: float = 1.0
+    device: str = "cpu"
+
+    def __post_init__(self):
+        super().__init__()
+        self.encoder = MLPEncoder(self.obs_dim, self.emb_dim, self.hidden, self.depth)
+        self.to(self.device)
+
+    @staticmethod
+    def _variance(z: torch.Tensor) -> torch.Tensor:
+        std = z.std(dim=0)
+        return F.relu(1.0 - std).mean()
+
+    @staticmethod
+    def _covariance(z: torch.Tensor) -> torch.Tensor:
+        zc = z - z.mean(dim=0)
+        cov = (zc.T @ zc) / (z.size(0) - 1)
+        off = cov - torch.diag(cov.diag())
+        return off.pow(2).sum() / z.size(1)
+
+    def forward(self, x, x_prime, momentum: bool = True):
+        h = self.encoder(x)
+        h_p = self.encoder(x_prime)
+        loss = (
+            self.lambda_inv * F.mse_loss(h, h_p)
+            + self.lambda_var * (self._variance(h) + self._variance(h_p))
+            + self.lambda_cov * (self._covariance(h) + self._covariance(h_p))
+        )
+        return loss, h, h_p, h_p
+
+
 MODEL_REGISTRY = {
     "jepa": JepaCore,
     "recon": Recon,
     "contrastive": Contrastive,
+    "vicreg": VICReg,
 }
 
 

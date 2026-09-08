@@ -100,3 +100,45 @@ class TestTrainingGates:
             d = WORLD_REGISTRY[wname](seed=0)
             batch = d.generate(16)
             assert batch["x"].shape[0] == 16
+
+class TestVICRegBehavior:
+    def test_vicreg_in_registry_and_builds(self):
+        from jepa_id.models import VICReg
+        m = build_model("vicreg", obs_dim=4, emb_dim=8)
+        assert isinstance(m, VICReg)
+
+    def test_vicreg_forward_loss_finite(self):
+        from jepa_id.models import VICReg
+        m = VICReg(obs_dim=4, emb_dim=8)
+        x, xp = make_batch(n=64)
+        loss, h, hp, _ = m(x, xp, momentum=False)
+        assert torch.isfinite(loss)
+        assert h.shape == (64, 8) and hp.shape == (64, 8)
+
+    def test_vicreg_variance_term_penalizes_collapse(self):
+        from jepa_id.models import VICReg
+        # constant embedding -> variance hinge = 1.0 per dim (std 0), relu(1-0)=1
+        z = torch.ones(32, 8)
+        v = VICReg._variance(z)
+        assert torch.allclose(v, torch.tensor(1.0), atol=1e-5)
+        # well-spread embedding -> hinge 0
+        z2 = torch.randn(128, 8) * 3.0
+        assert VICReg._variance(z2) < 0.05
+
+    def test_vicreg_covariance_penalizes_correlated_dims(self):
+        from jepa_id.models import VICReg
+        rng = torch.Generator().manual_seed(0)
+        # two perfectly correlated dims -> covariance penalty > 0
+        base = torch.randn(200, 1, generator=rng)
+        zc = torch.cat([base, base, torch.randn(200, 6, generator=rng)], dim=1)
+        c_pen = VICReg._covariance(zc)
+        zi = torch.randn(200, 8, generator=rng)
+        assert c_pen > VICReg._covariance(zi) * 3  # correlated >> iid (~7x typical)
+
+    def test_vicreg_identical_views_give_zero_invariance(self):
+        from jepa_id.models import VICReg
+        m = VICReg(obs_dim=4, emb_dim=8)
+        x, _ = make_batch(n=32)
+        loss, h, hp, _ = m(x, x.clone(), momentum=False)
+        # invariance part ~0; loss is just variance+covariance terms
+        assert loss.item() < 60.0  # 25*0 + 25*var(<=1) + 1*cov — bounded

@@ -107,6 +107,7 @@ def stage_cells(stage: str, limit: int | None = None) -> list[dict]:
                         cells.append({"stage": stage, "world": "L1", "K": K,
                                       "g": "spiral", "model": model, "amp": 1.0,
                                       "seed": seed, "dim": dim})
+        # L2 S-dial (L3 removed from stage 2 — invalid v1 world, re-run in stage 4)
         for S in S_GRID:
             for model in MODELS:
                 for seed in SEEDS_FULL:
@@ -114,17 +115,34 @@ def stage_cells(stage: str, limit: int | None = None) -> list[dict]:
                         cells.append({"stage": stage, "world": "L2", "S": S,
                                       "g": "spiral", "model": model, "amp": 1.0,
                                       "seed": seed, "dim": dim})
-        # L3 rule-governed grammar (fixed structure)
-        for model in MODELS:
-            for seed in SEEDS_FULL:
-                cells.append({"stage": stage, "world": "L3", "g": "spiral",
-                              "model": model, "seed": seed, "dim": 6})
     elif stage == "3":
-        # Stage 3: L4 Turkish morphology (fixed structure)
+        # Stage 3: L4 v2 Turkish caret-rule lexicon (fixed structure, negative class)
+        # Per A4: v1 world invalid (constant latent, x leaked z). v2 lexicon has
+        # caret_required ~ balanced 0/1; x = surface letters only.
         for model in MODELS:
             for seed in SEEDS_FULL:
                 cells.append({"stage": stage, "world": "L4", "g": "nonlinear",
                               "model": model, "seed": seed, "dim": 3})
+    elif stage == "4":
+        # Stage 4 (A4): L3 v2 rule grammar + entropy-matched L2m control + L4 v2.
+        # L3 v2: obs_per_pos=1 (scalar-per-dim surface, same obs structure as L2);
+        # emb=6 (obs width 3 -> emb 6 gives the encoder working room).
+        # L2m twin: S = round(2^H̄), H̄ = mean per-dim entropy of L3 z. L3 z cols:
+        # s(2 states,1 bit) av1(4 states,2 bits) av2(4 states,2 bits) -> H̄ = 5/3
+        # = 1.67 bits -> S = round(2^1.67) = 3. Same latent_dim=3, same obs width.
+        # emb=6 for both; both get identical model hyperparams per objective.
+        for model in MODELS:
+            for seed in SEEDS_FULL:
+                cells.append({"stage": stage, "world": "L3", "g": "linear",
+                              "model": model, "seed": seed, "dim": 3,
+                              "obs_per_pos": 1, "emb": 6,
+                              "sigreg_lambda": 10.0 if model == "jepa" else 1.0,
+                              "temperature": 0.3 if model == "contrastive" else 0.1})
+                cells.append({"stage": stage, "world": "L2", "arm": "l2m",
+                              "g": "linear", "model": model, "seed": seed,
+                              "dim": 3, "S": 3, "emb": 6,
+                              "sigreg_lambda": 10.0 if model == "jepa" else 1.0,
+                              "temperature": 0.3 if model == "contrastive" else 0.1})
     else:
         raise ValueError(f"unknown stage: {stage}")
     if limit:
@@ -156,6 +174,8 @@ def run_cell(c: dict, device: str) -> dict:
     for k in ("alpha", "K", "S"):
         if k in c:
             kw[k] = c[k]
+    if "obs_per_pos" in c:
+        kw["obs_per_pos"] = c["obs_per_pos"]
     if "g" in c:
         kw["mixing"] = c["g"]
     if "sigreg_lambda" in c:
