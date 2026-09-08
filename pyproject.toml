@@ -13,9 +13,12 @@ dependencies = [
 ]
 
 [project.scripts]
-gen-worlds = "jepa_id.gen_worlds:main"
-run-sweep = "jepa_id.run_sweep:main"
-analyze-sweep = "jepa_id.analyze_sweep:main"
+# NOTE: no console entry points. The pipeline runs as scripts:
+#   uv run python repro/run_sweep.py --stage N
+#   uv run python repro/analyze_report.py
+#   uv run python repro/figures.py
+#   uv run pytest tests/ -q
+# (src/jepa_id is a library consumed by repro/.)
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
