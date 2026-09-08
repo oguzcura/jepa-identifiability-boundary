@@ -5,7 +5,7 @@
   year         = {2026},
   eprint       = {2605.26379},
   archivePrefix= {arXiv},
-  note         = {All results formally verified in Lean 4 + Mathlib, zero sorry. Theorems 5.1/5.2/5.3: linear identifiability iff Gaussian (OU) latents under Assumptions 3.1.},
+  note         = {Formal identifiability results for LeJEPA verified in Lean 4 (Theorems 5.1--5.3): linear identifiability of latents iff Gaussian under stationary OU dynamics with SIGReg regularization.},
 }
 
 @misc{lecun2022path,
@@ -13,7 +13,6 @@
   author       = {LeCun, Yann},
   year         = {2022},
   howpublished = {OpenReview},
-  note         = {Position paper introducing the Joint-Embedding Predictive Architecture (JEPA) and world-model vision.},
 }
 
 @inproceedings{assran2023ijepa,
@@ -25,22 +24,20 @@
   archivePrefix= {arXiv},
 }
 
-@inproceedings{leworldmodel2024,
-  title        = {LeWorldModel: Learning a World Model from Pixels on a Single GPU},
-  author       = {LeCun, Yann and Balestriero, Randall},
-  year         = {2024},
-  eprint       = {2403.06407},
+@misc{leworldmodel2026,
+  title        = {{LeWorldModel}: Stable End-to-End Joint-Embedding Predictive Architecture from Pixels},
+  author       = {Maes, Lucas and Le Lidec, Quentin and Scieur, Damien and LeCun, Yann and Balestriero, Randall},
+  year         = {2026},
+  eprint       = {2603.19312},
   archivePrefix= {arXiv},
-  note         = {Action-conditioned JEPA world model; single-GPU training; SIGReg anti-collapse regularizer.},
 }
 
 @misc{mcjepa2026,
   title        = {Your Probabilistic {JEPA} Is Secretly a Hidden {Markov} Model: A State-Space Interpretation of Joint-Embedding Predictive Learning},
-  author       = {Anonymous},
+  author       = {Huang, Yongchao},
   year         = {2026},
   eprint       = {2608.13621},
   archivePrefix= {arXiv},
-  note         = {Introduces MCJEPA — constructive fix (learned transition matrix) for finite Markov states; adjacent constructive work to cite and distinguish from, NOT a scoop of our L2 measurement.},
 }
 
 @misc{arya2026,
@@ -49,119 +46,105 @@
   year         = {2026},
   eprint       = {2606.12471},
   archivePrefix= {arXiv},
-  note         = {ARYA Labs; PGSA architecture grounded in the causal physics generator; stays in continuous physical systems (categorical: 0 hits). Does not test discrete generative latents.},
 }
 
 @misc{nogaussian2026,
   title        = {No Gaussian Required: Contrastive Inverse Dynamics for {JEPA} World Models},
-  author       = {Anonymous},
+  author       = {Boylan, Jack and Hokamp, Chris},
   year         = {2026},
   eprint       = {2608.17542},
   archivePrefix= {arXiv},
-  note         = {Replaces SIGReg Gaussian-prescription with contrastive inverse dynamics; strengthens our H2 (SIGReg-blurs-discrete-clusters) hypothesis.},
 }
 
 @misc{jepaparadox2026,
-  title        = {The {JEPA} Paradox in Language: Why Deterministic Latent Prediction Fails for Text},
-  author       = {Anonymous},
+  title        = {The {JEPA} Paradox in Language: The Geometry of Linguistic Alternatives},
+  author       = {Dinh, Anh Trac Duc and Vo, Khang Nhat Hoang},
   year         = {2026},
   eprint       = {2607.23531},
   archivePrefix= {arXiv},
-  note         = {Diagnoses why JEPA-style latent prediction fails on text (conditional concentration / centroid degeneracy); our L3-L4 motivation.},
 }
 
 @misc{phylatent2026,
-  title        = {PhyLatent: Dynamics-Relevant Objectives for {JEPA} World Models},
-  author       = {Anonymous},
+  title        = {{PhyLatent}: Learning Dynamics-Relevant Representations for {JEPA} World Models},
+  author       = {Zeng, Xi and Ren, Haojie and Song, Ziying},
   year         = {2026},
   eprint       = {2608.05720},
   archivePrefix= {arXiv},
-  note         = {Global non-collapse is insufficient; physical invariance / identifiability / counterfactual-dynamics collapse as distinct failure modes.},
 }
 
 @misc{discretejepa2025,
   title        = {Discrete {JEPA}: Learning Discrete Token Representations without Reconstruction},
-  author       = {Anonymous},
+  author       = {Baek, Junyeob and Lee, Hosung and Hoang, Christopher and Ren, Mengye and Ahn, Sungjin},
   year         = {2025},
   eprint       = {2506.14373},
   archivePrefix= {arXiv},
-  note         = {KAIST/NYU. Quantizes the ENCODER OUTPUT into discrete tokens for reasoning — NOT about recovery of discrete generative latents. Not our gap.},
 }
 
 @misc{sjepa2026,
   title        = {{SJEPA}: Learning Elegant Latent Dynamics with Hybrid Symbolic-Neural Predictors},
-  author       = {Anonymous},
+  author       = {Huang, Yongchao},
   year         = {2026},
   eprint       = {2608.04060},
   archivePrefix= {arXiv},
-  note         = {Symbolic dynamics induction; different goal (induce compact dynamics), not measuring recovery of known discrete latents.},
 }
 
 @misc{rijepa2026,
   title        = {Knowledge, Rules and Their Embeddings: Two Paths towards Neuro-Symbolic {JEPA}},
-  author       = {Anonymous},
+  author       = {Huang, Yongchao and Raza, Hassan},
   year         = {2026},
   eprint       = {2603.13265},
   archivePrefix= {arXiv},
-  note         = {RiJEPA; rule INJECTION into JEPA; different goal from measuring identifiability.},
 }
 
 @misc{aimprobing2026,
   title        = {Probing the Latent World: Emergent Discrete Symbols and Physical Structure in Latent Representations},
-  author       = {Anonymous},
+  author       = {{Liu hung ming}},
   year         = {2026},
   eprint       = {2603.20327},
   archivePrefix= {arXiv},
-  note         = {AIM framework; passive quantization probe to inspect continuous video encoders — interpretability, not recovery of known discrete generative latents.},
 }
 
-% --- Interventional / controlled CRL anchors (checked live; reframe pre-empted — do NOT claim novelty here) ---
-@misc{interventionalCRL2022,
+@inproceedings{interventionalCRL2022,
   title        = {Interventional Causal Representation Learning},
-  author       = {von K{\"u}gelgen, Julius and Besserve, Michel and Wendong, Liang and Gresele, Luigi and Kek{\"u}ll{\"u}o{\u{g}}lu, Armin and Janzing, Dominik and Sch{\"o}lkopf, Bernhard},
-  year         = {2022},
+  author       = {Ahuja, Kartik and Mahajan, Divyat and Wang, Yixin and Bengio, Yoshua},
+  booktitle    = {ICML},
+  year         = {2023},
   eprint       = {2209.11924},
   archivePrefix= {arXiv},
-  note         = {CRL founding premise: latent factors identifiable up to permutation/scaling given perfect do interventions. Pre-empts any "predict-under-intervention is new" framing (it is CRL 2022+).},
 }
 
 @misc{controlledWM2026,
   title        = {On the Identifiability of Controlled World Models},
-  author       = {Anonymous},
+  author       = {Zhang, Xiangteng and Guan, Yang and Zhang, Bo and Li, Hongyang and Zhang, Ya-Qin and Li, Shengbo Eben},
   year         = {2026},
   eprint       = {2607.22430},
   archivePrefix= {arXiv},
-  note         = {DIRECT HIT on the interventional reframe: joint identifiability (representation + transition) for action-conditioned LeJEPA-style world models. Scope: Gaussian latents. The discrete/non-Gaussian controlled case is the possible residue.},
 }
 
 @misc{causaljepa2026,
   title        = {Causal-{JEPA}: Learning World Models through Object-Level Latent Masking},
-  author       = {Anonymous},
+  author       = {Nam, Heejeong and Le Lidec, Quentin and Maes, Lucas and LeCun, Yann and Balestriero, Randall},
   year         = {2026},
   eprint       = {2602.11389},
   archivePrefix= {arXiv},
-  note         = {"Counterfactual JEPA" name territory is taken. Cite + distinguish.},
 }
 
 @misc{uwmjepa2026b,
   title        = {{UWM-JEPA}: Predictive World Models That Imagine in Belief Space},
-  author       = {Anonymous},
+  author       = {Radha, Santosh Kumar and Goktas, Oktay},
   year         = {2026},
   eprint       = {2605.25313},
   archivePrefix= {arXiv},
-  note         = {Belief-space steering "under counterfactual actions" — adjacent; cite.},
 }
 
 @misc{dsge2026,
   title        = {{DSGE} as a Structured World Model: Benchmarking Counterfactual Generalization in Economic Worlds},
-  author       = {Anonymous},
+  author       = {Xu, Wenli},
   year         = {2026},
   eprint       = {2607.03144},
   archivePrefix= {arXiv},
-  note         = {Benchmarks world models (incl. JEPA) on counterfactual generalization — the "eval under intervention" instrument partially exists. Cite + distinguish from our ground-truth-known discrete instrument.},
 }
 
-% --- Statistical / methodological anchors ---
 @article{wilson1927,
   title     = {Probable Inference, the Law of Succession, and Statistical Inference},
   author    = {Wilson, Edwin B.},
