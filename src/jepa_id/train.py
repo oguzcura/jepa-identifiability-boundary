@@ -48,6 +48,7 @@ class TrainConfig:
     alpha: float = 2.0           # L0 gennorm shape (ignored for L1-L4)
     K: int = 8                   # L1 bins
     S: int = 5                   # L2 categories
+    obs_per_pos: int = 2         # L3 embedding dim per surface vowel position
     mixing: str = "nonlinear"    # linear | nonlinear (spiral mixing; theorem uses nonlinear)
     amp: float = 0.5             # nonlinear mixing amplitude (0 = linear); milder = easier to invert
     temperature: float = 0.1     # InfoNCE temperature (contrastive only)
@@ -82,7 +83,10 @@ def train(cfg: TrainConfig) -> dict:
         world = wcls(latent_dim=nd, S=cfg.S, g=cfg.mixing, seed=cfg.seed)
         obs_dim = nd
     else:  # L3, L4
-        world = wcls(seed=cfg.seed)
+        if cfg.world == "L3":
+            world = wcls(seed=cfg.seed, obs_per_pos=cfg.obs_per_pos)
+        else:
+            world = wcls(seed=cfg.seed)
         obs_dim = world.generate(1)["x"].shape[1]
 
     sigreg_lambda = getattr(cfg, "sigreg_lambda", 1.0)
@@ -149,7 +153,10 @@ def evaluate(cfg_ckpt: str, n_eval: int = 2000, seed: int = 1) -> dict:
         world_obj = wcls(latent_dim=nd, S=cfgd["S"], g=mixing, seed=seed)
         obs_dim = nd
     else:
-        world_obj = wcls(seed=seed)
+        if world == "L3":
+            world_obj = wcls(seed=seed, obs_per_pos=cfgd.get("obs_per_pos", 2))
+        else:
+            world_obj = wcls(seed=seed)
         obs_dim = world_obj.generate(1)["x"].shape[1]
 
     from jepa_id.models import build_model
