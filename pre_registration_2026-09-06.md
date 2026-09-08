@@ -228,3 +228,37 @@ The A2 config (dim 8, quadratic mixing, λ=1.0) produced a
    trivially high at every α because the decoder inverts input-space directly — expected, not a
    violation.
 *(No change to H0/H1a/H1b/H2, §4 ladder, §5 models, §6 metrics, §7 design.)*
+
+
+### A4 (2026-09-08) — L3/L4 world redesign (non-degenerate + no literal z exposure); entropy-matched H1b control
+Stage-2 results exposed a **world-validity defect** that invalidates the Stage-2 L3 arm and blocks
+L4 (all 15 cells errored). Measured latent entropies (n=20,000): **L3 joint = 1.00 bit vs 2.0 iid**
+— the harmony rule as implemented sets `affix = stem` *deterministically*, so z has only 2 real
+states — **and the observation x[:,0:4] literally contains stem/affix**. Any model that copies x
+columns to h scores ~1.0 without learning structure; the Stage-2 L3 "H1b candidate" (jepa 0.975)
+is therefore **not admissible evidence** for H1b. L4 additionally carries a constant latent column
+(`caret_required = 1` for every word — zero-variance → per-dim probe crashes: 15/15 Stage-3 cells
+failed) and x leaks caret_idx/class/flag directly.
+
+**Fixes (worlds.py, tested):**
+1. **L3 v2** — grammar with *genuine* joint entropy: stem vowel-class (front/back) × affix vowel
+   (2-way) × affix *slot type* drawn from a rule table where the affix vowel is constrained by
+   harmony *but not equal to* the stem class column; z = (stem_class, affix_vowel, slot) with
+   H(z) > 2 bits and rule-governed dependence. Observation x is a **featurized surface**: stem and
+   affix letters one-hot over the vowel/consonant alphabet + length + noise — z must be *inferred*
+   through the rule, never read as literal columns. Existing tests asserting `affix==stem` and
+   `x[:,4]≈0` are **replaced** (they codified the defect).
+2. **L4 v2** — lexicon gains a **negative class** (words that must NOT take a caret, matched on
+   length/vowel structure) so caret_required has real variance (P(caret)≈0.5); observation x drops
+   the direct caret/class/flag columns and keeps only surface-feature columns (letters, length,
+   vowel positions). Ground truth z = (stem_class, caret_required, caret_vowel) remains fully known.
+3. **Entropy-matched H1b control (operationalizes the pre-registered "matched marginal statistics"
+   phrase in H1b):** every L3/L4 cell gets a twin **L2m** (entropy-matched Markov) drawn with the
+   same latent_dim and S chosen so that a single dimension's marginal entropy ≈ the L3/L4 world's
+   per-dim entropy (S = round(2^H̄), H̄ = mean per-dim entropy). L2m differs from L2 only in S;
+   same generator, same observation map. **H1b decision becomes:** R_L3 > R_L2m with 95% CI
+   excluding 0 (Δ>0.2 as frozen), i.e., structure beats *entropy-matched* unstructured categories.
+4. **Stage-2 L3 rows (15 cells) are withdrawn from evidence** (invalid world); re-run under L3 v2
+   in a new stage (4). No H0/H1a/H2 claims touched — L1/L2/L4-v1 rows unaffected (L2 entropy
+   verified healthy: S=5,d=8 joint 14.2 bits).
+*(End A4.)*
