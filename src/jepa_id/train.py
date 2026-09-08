@@ -79,7 +79,7 @@ def train(cfg: TrainConfig) -> dict:
     elif cfg.world == "L1":
         world = wcls(latent_dim=nd, K=cfg.K, g=cfg.mixing, seed=cfg.seed)
         obs_dim = nd
-    elif cfg.world == "L2":
+    elif cfg.world in ("L2", "L2t"):
         world = wcls(latent_dim=nd, S=cfg.S, g=cfg.mixing, seed=cfg.seed)
         obs_dim = nd
     else:  # L3, L4
@@ -149,7 +149,7 @@ def evaluate(cfg_ckpt: str, n_eval: int = 2000, seed: int = 1) -> dict:
     elif world == "L1":
         world_obj = wcls(latent_dim=nd, K=cfgd["K"], g=mixing, seed=seed)
         obs_dim = nd
-    elif world == "L2":
+    elif world in ("L2", "L2t"):
         world_obj = wcls(latent_dim=nd, S=cfgd["S"], g=mixing, seed=seed)
         obs_dim = nd
     else:
@@ -183,8 +183,8 @@ def evaluate(cfg_ckpt: str, n_eval: int = 2000, seed: int = 1) -> dict:
     # report discrete + collapse readouts only.
     from jepa_id.readout import discrete_summary, collapse_metrics
     zc = None
-    continuous_meaningful = world in ("L0", "L1")
-    if world == "L1":
+    continuous_meaningful = world in ("L0", "L1", "L2t")
+    if world in ("L1", "L2t"):
         zc = d["zK"]
     elif world in ("L2", "L3", "L4"):
         zc = z if np.issubdtype(np.asarray(z).dtype, np.integer) else d.get("zK")

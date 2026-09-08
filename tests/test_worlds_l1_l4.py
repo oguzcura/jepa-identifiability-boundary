@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from jepa_id.worlds import (
-    L1World, L2World, L3World, L4World, WORLD_REGISTRY, ALPHABET,
+    L1World, L2World, L2TwinWorld, L3World, L4World, WORLD_REGISTRY, ALPHABET,
 )
 
 
@@ -170,4 +170,53 @@ class TestL4TurkishRulesV2:
         assert len(Counter(rows)) == len(w.vocab)
 
     def test_registry_has_all_levels(self):
-        assert set(WORLD_REGISTRY) == {"L0", "L1", "L2", "L3", "L4"}
+        assert set(WORLD_REGISTRY) == {"L0", "L1", "L2", "L2t", "L3", "L4"}
+
+
+class TestL2TwinMomentsMatched:
+    """R1 (A5): L2t must match L2's OBSERVED x moments; only support differs."""
+
+    def test_registry_contains_twin(self):
+        assert "L2t" in WORLD_REGISTRY
+        assert WORLD_REGISTRY["L2t"] is L2TwinWorld
+
+    def test_x_moments_match_l2(self):
+        for seed in (0, 1, 7):
+            a = L2World(latent_dim=3, S=5, seed=seed)
+            b = L2TwinWorld(latent_dim=3, S=5, seed=seed)
+            da, db = a.generate(40000), b.generate(40000)
+            ma = da["x"].mean(0); mb = db["x"].mean(0)
+            va = da["x"].var(0);  vb = db["x"].var(0)
+            assert np.allclose(ma, mb, atol=0.05), (ma, mb)
+            assert np.allclose(va, vb, atol=0.10), (va, vb)
+
+    def test_z_continuous_twin(self):
+        w = L2TwinWorld(latent_dim=2, S=4, seed=0)
+        d = w.generate(500)
+        assert d["z"].dtype == np.float64
+        # continuous support: many distinct values per dim
+        assert len(np.unique(np.round(d["z"][:, 0], 6))) > 100
+
+    def test_zK_has_S_bins_balanced(self):
+        w = L2TwinWorld(latent_dim=2, S=4, seed=3)
+        d = w.generate(20000)
+        for dim in range(2):
+            uniq, counts = np.unique(d["zK"][:, dim], return_counts=True)
+            assert len(uniq) == 4
+            assert np.all(counts / 20000 > 0.15)   # approx equiprobable
+
+    def test_persistence_matches_l2(self):
+        # cross-view correlation of observed x should be ~rho*signal fraction,
+        # comparable between L2 and L2t at same seed/rho
+        a = L2World(latent_dim=4, S=5, seed=0)
+        b = L2TwinWorld(latent_dim=4, S=5, seed=0)
+        da, db = a.generate(20000), b.generate(20000)
+        def corr(d):
+            xs = d["x"] - d["x"].mean(0); xp = d["x_prime"] - d["x_prime"].mean(0)
+            return (xs * xp).mean(0) / (xs.std(0) * xp.std(0))
+        ca, cb = corr(da).mean(), corr(db).mean()
+        # Both strongly persistent; L2's is lower because categorical jumps in
+        # random (state-unordered) E columns decorrelate more than the smooth
+        # AR(1) — the support difference itself. Loose bound + persistence check.
+        assert ca > 0.5 and cb > 0.5
+        assert abs(ca - cb) < 0.25, (ca, cb)

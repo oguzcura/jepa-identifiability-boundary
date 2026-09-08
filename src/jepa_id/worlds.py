@@ -449,10 +449,76 @@ class L4World:
         return {"z": z, "z_prime": z_prime, "x": x, "x_prime": x_prime}
 
 
+# --------------------------------------------------------------------------- #
+# L2t: Continuous moment-matched twin of L2 (R1 / A5)
+# --------------------------------------------------------------------------- #
+@dataclass
+class L2TwinWorld:
+    """Continuous twin of L2: identical observable moments, continuous support.
+
+    R1 control (A5): L2's categorical latents (S point masses per dim, uniform)
+    vs this world's Gaussian AR(1) latents — same per-dim mean/variance of the
+    OBSERVED x (matched by construction via the SAME embedding matrix E as
+    L2World with the same seed: x_marginal moments are fixed by E's column
+    statistics), same persistence rho, same obs noise, same diagonal per-dim
+    observation structure. The ONLY difference is the latent support: S point
+    masses vs a continuum with identical 1st/2nd moments.
+
+    z_cont ~ N(0,1) AR(1):  z_cont' = rho*z_cont + sqrt(1-rho^2)*eps
+    x[:,d] = m_d + s_d * z_cont[:,d] + obs_noise*eps    (m_d,s_d = E[:,d] col stats)
+
+    zK = z_cont quantized into S equiprobable bins (theoretical N(0,1) quantiles)
+    -> discrete readout comparable to L2's acc_mean: same #classes (S), same
+    marginal entropy (log2 S per dim), matched moments — only support differs.
+    """
+    latent_dim: int = 4
+    S: int = 5
+    rho: float = 0.85
+    g: str = "linear"
+    obs_noise: float = 0.05
+    seed: int = 0
+    rng: np.random.Generator = field(init=False, repr=False)
+
+    def __post_init__(self):
+        from scipy.stats import norm
+        self.rng = np.random.default_rng(self.seed)
+        # identical E/P construction to L2World (same draw order) so that
+        # per-dim observable moments match L2(S, seed) exactly
+        base = self.rng.random((self.S, self.S))
+        P = (base + base.T) / 2.0
+        P = (1.0 - self.rho) * P + self.rho * np.eye(self.S)
+        P /= P.sum(axis=1, keepdims=True)
+        self.P = P
+        self.E = self.rng.normal(size=(self.S, self.latent_dim))
+        # per-dim column statistics of E -> observable moments of the twin
+        self.m = self.E.mean(axis=0, keepdims=True)        # (1, d)
+        self.s = self.E.std(axis=0, keepdims=True) + 1e-6  # (1, d)
+        # theoretical N(0,1) quantile edges for S equiprobable bins
+        self.edges = norm.ppf(np.arange(1, self.S) / self.S)
+
+    def _bin(self, z_cont: np.ndarray) -> np.ndarray:
+        idx = np.zeros(z_cont.shape, dtype=int)
+        for e in self.edges:
+            idx = idx + (z_cont > e).astype(int)
+        return np.clip(idx, 0, self.S - 1)
+
+    def generate(self, n_pairs: int) -> dict:
+        z = self.rng.normal(size=(n_pairs, self.latent_dim))
+        z_prime = self.rho * z + np.sqrt(1.0 - self.rho ** 2) * self.rng.normal(size=z.shape)
+        x = self.m + self.s * z + self.obs_noise * self.rng.normal(size=z.shape)
+        x_prime = self.m + self.s * z_prime + self.obs_noise * self.rng.normal(size=z_prime.shape)
+        return {
+            "z": z, "z_prime": z_prime,
+            "zK": self._bin(z), "zK_prime": self._bin(z_prime),
+            "x": x, "x_prime": x_prime,
+        }
+
+
 WORLD_REGISTRY = {
     "L0": L0World,
     "L1": L1World,
     "L2": L2World,
+    "L2t": L2TwinWorld,
     "L3": L3World,
     "L4": L4World,
 }
