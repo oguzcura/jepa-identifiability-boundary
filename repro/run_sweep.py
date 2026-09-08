@@ -184,6 +184,27 @@ def stage_cells(stage: str, limit: int | None = None) -> list[dict]:
                 cells.append({"stage": stage, "world": "L2", "arm": "s2vicreg",
                               "model": "vicreg", "seed": seed, "dim": 8,
                               "S": S2, "emb": 8, "g": "spiral", "amp": 1.0})
+    elif stage == "7":
+        # Stage 7 (A6): corrected H1b controls, paired with EXISTING stage-4 L3
+        # rows at identical (model, seed, dim=3, emb=6, g=linear, lambda, tau).
+        # 7a L2mH: heterogeneous per-dim S=(2,4,4) = L3 v2's marginal structure,
+        #          independent dims (NO rule) — the primary marginal-matched
+        #          control (joint 5 bits / 32 states, per-dim chance floors
+        #          0.5/0.25/0.25 identical to L3).
+        # 7b L2mS2: homogeneous S=2, d=3 -> 8 states / 3 bits — joint-entropy
+        #          bracket (per-dim probes easier: all 2-way, chance 0.5).
+        for model in MODELS:
+            for seed in SEEDS_FULL:
+                cells.append({"stage": stage, "world": "L2", "arm": "l2mh",
+                              "g": "linear", "model": model, "seed": seed,
+                              "dim": 3, "S": (2, 4, 4), "emb": 6,
+                              "sigreg_lambda": 10.0 if model == "jepa" else 1.0,
+                              "temperature": 0.3 if model == "contrastive" else 0.1})
+                cells.append({"stage": stage, "world": "L2", "arm": "l2ms2",
+                              "g": "linear", "model": model, "seed": seed,
+                              "dim": 3, "S": 2, "emb": 6,
+                              "sigreg_lambda": 10.0 if model == "jepa" else 1.0,
+                              "temperature": 0.3 if model == "contrastive" else 0.1})
     else:
         raise ValueError(f"unknown stage: {stage}")
     if limit:

@@ -220,3 +220,59 @@ class TestL2TwinMomentsMatched:
         # AR(1) — the support difference itself. Loose bound + persistence check.
         assert ca > 0.5 and cb > 0.5
         assert abs(ca - cb) < 0.25, (ca, cb)
+
+
+class TestA6L2mHControl:
+    """A6: L2mH = unstructured control with per-dim S matching L3 v2's
+    heterogeneous cardinalities (2,4,4) but NO rule. Marginal entropies and
+    probe chance floors must equal L3's; dims must be independent."""
+
+    def test_heterogeneous_generation_shapes(self):
+        w = L2World(latent_dim=3, S=(2, 4, 4), seed=0)
+        d = w.generate(5000)
+        assert d["z"].shape == (5000, 3)
+        # per-dim unique state counts exactly (2, 4, 4)
+        for j, (lo, hi) in enumerate([(0, 1), (0, 3), (0, 3)]):
+            assert d["z"][:, j].min() == lo and d["z"][:, j].max() == hi
+            assert len(np.unique(d["z"][:, j])) == hi - lo + 1
+
+    def test_marginal_entropy_matches_l3(self):
+        # L3 v2 per-dim H = [1, 2, 2] bits (uniform over 2, 4, 4 states)
+        w = L2World(latent_dim=3, S=(2, 4, 4), seed=1)
+        d = w.generate(200_000)
+        H = []
+        for j in range(3):
+            _, counts = np.unique(d["z"][:, j], return_counts=True)
+            p = counts / counts.sum()
+            H.append(-(p * np.log2(p)).sum())
+        assert np.allclose(H, [1.0, 2.0, 2.0], atol=0.01), H
+
+    def test_dims_independent_no_rule(self):
+        # L3's rule couples dims (joint H = 3 bits < sum 5). The control's dims
+        # must be independent: joint H = sum of per-dim = 5 bits, 32 joint states.
+        w = L2World(latent_dim=3, S=(2, 4, 4), seed=2)
+        d = w.generate(400_000)
+        rows = np.unique(d["z"], axis=0)
+        assert len(rows) == 2 * 4 * 4  # all 32 combos reachable (independent)
+        p = np.unique(d["z"], axis=0, return_counts=True)[1] / len(d["z"])
+        Hj = -(p * np.log2(p)).sum()
+        assert abs(Hj - 5.0) < 0.02, Hj
+
+    def test_homogeneous_path_unchanged(self):
+        # A4 L2m path (int S) must behave exactly as before
+        a = L2World(latent_dim=4, S=5, seed=0)
+        assert a.P.shape == (5, 5) and a.E.shape == (5, 4)
+        da = a.generate(2000)
+        b = L2World(latent_dim=4, S=5, seed=0)
+        db = b.generate(2000)
+        assert np.array_equal(da["z"], db["z"])
+
+    def test_s2_joint_bracket(self):
+        # A6 secondary control: L2m S=2, d=3 -> 2^3=8 joint states, 3 bits
+        # (joint-entropy-matched to L3 v2's 8 states / 3.0 bits)
+        w = L2World(latent_dim=3, S=2, seed=3)
+        d = w.generate(100_000)
+        assert len(np.unique(d["z"], axis=0)) == 8
+        p = np.unique(d["z"], axis=0, return_counts=True)[1] / len(d["z"])
+        Hj = -(p * np.log2(p)).sum()
+        assert abs(Hj - 3.0) < 0.02, Hj

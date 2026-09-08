@@ -237,33 +237,61 @@ class L2World:
     invariant distribution for symmetric P). Observations x = one-hot-style
     embedding + noise, so the encoder must recover discrete structure.
 
+    S may be an int (homogeneous: every dim has S states — A4 L2m control)
+    or a tuple/list of per-dim state counts (A6 L2mH control, e.g. (2,4,4)
+    matching L3 v2's heterogeneous per-dim cardinalities with NO rule).
+
     Ground truth: the discrete state z (category index per dim).
     """
     latent_dim: int = 4
-    S: int = 5                       # number of categories per dimension
+    S: int | tuple[int, ...] | list[int] = 5  # per-dim categories (int = homogeneous)
     rho: float = 0.85               # stay-probability (diagonal strength)
     g: str = "linear"
     obs_noise: float = 0.05
     seed: int = 0
     rng: np.random.Generator = field(init=False, repr=False)
+    P: np.ndarray = field(init=False, repr=False)    # homogeneous only
+    E: np.ndarray = field(init=False, repr=False)    # homogeneous only
+    P_list: list = field(init=False, repr=False)     # heterogeneous per-dim
+    E_list: list = field(init=False, repr=False)
+    per_dim: list[int] = field(init=False, repr=False)
 
     def __post_init__(self):
         self.rng = np.random.default_rng(self.seed)
-        # symmetric transition matrix with strong diagonal (persistence)
-        base = self.rng.random((self.S, self.S))
-        P = (base + base.T) / 2.0
-        P = (1.0 - self.rho) * P + self.rho * np.eye(self.S)
-        P /= P.sum(axis=1, keepdims=True)
-        self.P = P
-        # mixing matrix maps category to continuous obs embedding
-        self.E = self.rng.normal(size=(self.S, self.latent_dim))
+        if isinstance(self.S, (tuple, list)):
+            # A6 L2mH: per-dim state counts; independent dims, per-dim P/E
+            self.per_dim = [int(s) for s in self.S]
+            assert len(self.per_dim) == self.latent_dim, \
+                f"per-dim S {self.per_dim} must match latent_dim {self.latent_dim}"
+            self.P_list, self.E_list = [], []
+            for Sj in self.per_dim:
+                base = self.rng.random((Sj, Sj))
+                Pj = (base + base.T) / 2.0
+                Pj = (1.0 - self.rho) * Pj + self.rho * np.eye(Sj)
+                Pj /= Pj.sum(axis=1, keepdims=True)
+                self.P_list.append(Pj)
+                self.E_list.append(self.rng.normal(size=Sj))
+            self.P, self.E = None, None
+        else:
+            self.per_dim = [int(self.S)] * self.latent_dim
+            base = self.rng.random((self.S, self.S))
+            P = (base + base.T) / 2.0
+            P = (1.0 - self.rho) * P + self.rho * np.eye(self.S)
+            P /= P.sum(axis=1, keepdims=True)
+            self.P = P
+            self.E = self.rng.normal(size=(self.S, self.latent_dim))
+            self.P_list, self.E_list = None, None
 
     def _mix(self, z: np.ndarray) -> np.ndarray:
         # z: (n, d) int categories -> (n, d) continuous via per-dim embeddings
         n, d = z.shape
         out = np.zeros((n, d))
-        for dim in range(d):
-            out[:, dim] = self.E[z[:, dim], dim]
+        if self.E_list is None:      # homogeneous: shared S, per-dim columns
+            for dim in range(d):
+                out[:, dim] = self.E[z[:, dim], dim]
+        else:                        # heterogeneous: per-dim embedding vector
+            for dim in range(d):
+                out[:, dim] = self.E_list[dim][z[:, dim]]
         return out
 
     def generate(self, n_pairs: int) -> dict:
@@ -271,12 +299,13 @@ class L2World:
         # sample two views from the Markov chain
         z = np.zeros((n_pairs, d), dtype=int)
         for dim in range(d):
-            z[:, dim] = self.rng.choice(self.S, size=n_pairs)
+            z[:, dim] = self.rng.choice(self.per_dim[dim], size=n_pairs)
         z_prime = np.zeros_like(z)
         for dim in range(d):
+            Pj = self.P if self.P_list is None else self.P_list[dim]
             for i in range(n_pairs):
                 z_prime[i, dim] = self.rng.choice(
-                    self.S, p=self.P[z[i, dim]])
+                    self.per_dim[dim], p=Pj[z[i, dim]])
         x = self._mix(z) + self.obs_noise * self.rng.normal(size=(n_pairs, d))
         x_prime = self._mix(z_prime) + self.obs_noise * self.rng.normal(size=(n_pairs, d))
         return {"z": z, "z_prime": z_prime, "x": x, "x_prime": x_prime}
