@@ -188,7 +188,11 @@ def main() -> None:
     if out_path.exists():
         for line in out_path.read_text().splitlines():
             try:
-                done.add(json.loads(line)["cell_id"])
+                rec = json.loads(line)
+                # error rows must NOT count as done, else a fixed cell is
+                # silently skipped on re-run and the stage reports complete
+                if "error" not in rec:
+                    done.add(rec["cell_id"])
             except json.JSONDecodeError:
                 continue
 
