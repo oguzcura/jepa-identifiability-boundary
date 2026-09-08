@@ -116,19 +116,25 @@ $\sim0.96\to0.30$ as $K:2\to16$) while continuous $R^2$ stays flat ($\sim0.90$)
 
 \subsection{L2: categorical states --- the collapse is real and steep}
 \begin{table}[h]\centering\small
-\begin{tabular}{@{}llccc@{}}
+\begin{tabular}{@{}llcccccc@{}}
 \toprule
-dim & metric & $S{=}3$ & $S{=}5$ & $S{=}10$ \\
+ & & \multicolumn{2}{c}{$S{=}3$} & \multicolumn{2}{c}{$S{=}5$} & \multicolumn{2}{c}{$S{=}10$} \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}
+dim & model & disc & twin & disc & twin & disc & twin \\
 \midrule
-8 & jepa acc & 0.855 & 0.716 & 0.456 \\
-8 & recon acc & & & \\
-8 & contrastive acc & & & \\
-32 & jepa acc & 0.697 & & 0.241 \\
+8 & jepa & 0.855 & 0.933 & 0.716 & 0.941 & 0.456 & \textbf{0.943} \\
+8 & recon & 0.971 & 0.978 & 0.852 & 0.987 & 0.580 & \textbf{0.988} \\
+8 & contrastive & 0.884 & 0.956 & 0.711 & 0.989 & 0.539 & \textbf{0.992} \\
+32 & jepa & 0.697 & 0.704 & 0.465 & 0.705 & 0.241 & \textbf{0.713} \\
+32 & recon & 0.932 & 0.954 & 0.784 & 0.980 & 0.447 & \textbf{0.983} \\
+32 & contrastive & 0.920 & 0.954 & 0.784 & 0.981 & 0.479 & \textbf{0.985} \\
 \bottomrule
 \end{tabular}
-\caption{L2 discrete acc (5 seeds). Full table in final version.}
+\caption{H1a: discrete L2 acc (disc) vs moment-matched continuous twin L2t
+ridge R$^2$ (twin), 5 seeds. The $>0.3$ frozen gap is met at $S{=}10$ for all
+models/dims (jepa $+0.487$ d8, $+0.473$ d32) and missed at $S{=}3,5$
+(honest partial).}
 \end{table}
-% TODO(stage5): paired L2t rows fill the H1a contrast in the same table.
 
 \subsection{L3 v2 vs L2m (H1b): honest null at the frozen bar}
 Stage-2's L3 arm was withdrawn (A4): the v1 grammar had 1 bit of joint entropy
@@ -157,10 +163,25 @@ The v1 world crashed (constant latent column, no negative class) and leaked
 $z$ into $x$. v2 (A4): matched negative class, surface-only observations.
 15/15 cells run clean, 0 errors. JEPA acc $0.60$--$0.79$ (mean $\sim0.71$)
 --- far below the v1 ceiling, i.e., the redesigned world discriminates.
-% TODO(stage6): add VICReg column.
+
+\subsection{VICReg (A5): the faithful fourth objective}
+VICReg (variance--invariance--covariance, standard $25/25/1$ weights) shows
+\textbf{no sharp $\alpha{=}2$ peak} on the L0 gate: recovery rises to a
+plateau $0.975$--$0.987$ from $\alpha{\geq}1$ and stays there through the
+uniform extreme ($0.975$ at $\alpha{=}32$). Its variance hinge + covariance
+decorrelation whiten the embedding but do not \emph{Gaussianize} it, so
+bounded uniform latents remain linearly recoverable --- the A5-predicted
+absence of a SIGReg-style distortion. On the discrete ladder VICReg mirrors
+the non-predictive objectives: no structure benefit at L3 ($0.714$ vs L2m
+$0.881$, $\Delta{-}0.167$), collapse along the L2 $S$-dial ($0.84\to0.45$),
+L4 $0.730$. Descriptive only (no H-test, per A5).
 
 \section{Decoupling: predicting well without understanding (F3)}
-% TODO(stage5-6): z-scored decoupling index per A5/R4 + scatter.
+Within-stage z-scored index (A5/R4): JEPA shows large positive $d$ on the
+clean single-world stages --- $+1.15$ (L0 gate), $+1.47$ (L4), $+1.44$
+(L2t) --- i.e., it predicts the next state better than stage-average while
+recovering the latent worse; contrastive mirrors negative on the same stages
+($-1.15$, $-1.92$, $-1.61$). Descriptive; plotted in F3.
 
 \section{Discussion}
 \textbf{What is new.} A measurement contribution: the first ladder into the
@@ -168,8 +189,9 @@ discrete/symbolic regime with the theorem's own instruments, plus the
 decoupling instrument (prediction vs state recovery on known ground truth).
 \textbf{What is honest.} H1b at the pre-registered effect size is a null
 (directional only); L4-v2 shows real but bounded recovery. The discrete
-collapse (L1/L2) is steep and survives the moment-matched twin comparison
-\textbf{[stage 5 pending]}. \textbf{What is open.} Controlled/action-conditioned
+collapse (L1/L2) is steep, and at $S{=}10$ the discrete recovery falls
+$>0.3$ below its moment-matched continuous twin (H1a partial pass), while at
+$S{<}10$ the gaps are real but below the frozen bar (honest partial). \textbf{What is open.} Controlled/action-conditioned
 discrete identifiability (\citet{controlledWM2026}); entropy-matched
 bounds at larger state counts.
 
