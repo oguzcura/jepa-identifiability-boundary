@@ -195,26 +195,30 @@ def f4(rows: list[dict], out: Path = FIG / "F4_l3_vs_l2m.png") -> Path:
               if any(r.get("model") == mo for r in l3)
               and any(r.get("model") == mo for r in l2m)]
     xpos = np.arange(len(models))
-    width = 0.36
-    for offset, (arm, col, lab) in enumerate(((-width / 2, "#4c72b0", "L3 (rule grammar)"),
-                                              (width / 2, "#dd8452", "L2mH (2,4,4) marginal-matched iid"))):
+    width = 0.34
+    # NOTE: do NOT unpack offsets via enumerate(...) — the index would shadow
+    # the intended ±offset and (worse) the series-selection test below can
+    # never see the label string. Explicit tuples, selected by key:
+    for off, key, col, lab in ((-0.19, "l3", "#4c72b0", "L3 (rule grammar)"),
+                               (0.19, "ctl", "#dd8452", "L2mH (2,4,4) marginal-matched iid")):
         means, errs = [], []
+        src = l3 if key == "l3" else l2m
         for model in models:
-            vals_a = np.array([r["metrics"]["linear_probe_acc_mean"] for r in l3
-                               if r.get("model") == model])
-            vals_b = np.array([r["metrics"]["linear_probe_acc_mean"] for r in l2m
-                               if r.get("model") == model])
-            vals = vals_a if arm == "L3 (rule grammar)" else vals_b
+            vals = np.array([r["metrics"]["linear_probe_acc_mean"] for r in src
+                             if r.get("model") == model])
             means.append(vals.mean())
             errs.append(vals.std() / np.sqrt(len(vals)))
-        ax.bar(xpos + offset, means, width, yerr=errs, color=col, label=lab, alpha=0.85)
+        ax.bar(xpos + off, means, width, yerr=errs, color=col, label=lab, alpha=0.85)
     ax.set_xticks(xpos)
     ax.set_xticklabels([MODEL_STYLE[m]["label"] for m in models], rotation=12)
-    ax.set_ylabel("recovery (discrete acc_mean, mean ± se over seeds)")
-    ax.set_title("F4: H1b — compositional vs marginal-matched unstructured (A6 control)")
-    ax.legend(frameon=False)
+    ax.set_ylabel("recovery (linear-probe acc., mean $\\pm$ s.e. over seeds)")
+    ax.set_title("H1b: compositional vs. marginal-matched unstructured control")
+    # Legend fully outside the axes (below the x-labels): entries can never
+    # overlap the bars regardless of bar heights.
+    ax.legend(frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.20),
+              ncols=2, fontsize=9)
     fig.tight_layout()
-    fig.savefig(out); plt.close(fig)
+    fig.savefig(out, bbox_inches="tight"); plt.close(fig)
     print(f"F4 written: {out}")
     return out
 

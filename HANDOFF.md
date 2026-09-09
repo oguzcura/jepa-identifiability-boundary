@@ -199,6 +199,28 @@ Residual (low severity, judgment calls — not fixed):
   (0.456 vs 0.527 same-metric), though not significantly — the null framing
   is correct, but a reviewer may probe this cell.
 
+## 11. Professionalism/polish pass (2026-09-09, user-directed)
+
+- Removed raw-filename leak from §3: protocol now cited as "the protocol"
+  with a footnote URL to the repo (file name kept only inside the footnote).
+- hyperref configured colorlinks (navy) — was red-box default (amateur tell).
+- "(hash-pinned)" → "SHA-256 hash recorded in the repository".
+- Reproducibility: "TDD suite green" → "automated test suite (80 checks)";
+  deleted internal "Author line per author-profile rules" sentence.
+- VICReg "(vicreg, A5)" → "(vicreg; introduced in amendment A5)".
+- F4 figure: legend moved fully outside (below axes), title de-coded
+  ("F4: H1b —" prefix dropped), pairs given a gap (±0.19 offset, width 0.34),
+  axis label cleaned.
+- **F4 DATA bug (found via pixel-scan during the layout check): the bar loop
+  unpacked offsets with enumerate(...), so the offset index shadowed the
+  intended ±positions AND the series-selection string test could never match
+  — both bars plotted the CONTROL arm (L2mH) values, one shifted left as
+  "blue". The figure therefore contradicted Table 3 (it showed L3 > control
+  for recon, not LeJEPA). Fixed (explicit (off, key, col, lab) tuples);
+  pixel-verified: blue > orange only for LeJEPA, matching the table.
+- All float specifiers [h]→[ht]; build now 0 LaTeX warnings (tectonic).
+- Release asset main.pdf re-uploaded post-fix (same tag, --clobber).
+
 **Quick resume commands:**
 ```bash
 cd /c/Users/oguzc/research/jepa-identifiability-boundary

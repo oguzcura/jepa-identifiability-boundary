@@ -7,9 +7,10 @@
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage{booktabs}
 \usepackage{graphicx}
-\usepackage{hyperref}
-\usepackage[numbers,sort&compress]{natbib}
 \usepackage{xcolor}
+\definecolor{linknavy}{RGB}{30,60,120}
+\usepackage[colorlinks=true, linkcolor=linknavy, citecolor=linknavy, urlcolor=linknavy]{hyperref}
+\usepackage[numbers,sort&compress]{natbib}
 \usepackage{enumitem}
 \definecolor{note}{RGB}{150,80,0}
 \newcommand{\honest}[1]{\textcolor{note}{[honest: #1]}}
@@ -167,8 +168,13 @@ regime with known ground truth.
 
 \section{Protocol and pre-registration}
 \label{sec:protocol}
-The protocol \texttt{pre\_registration\_2026-09-06.md} was frozen before any
-grid run (hash-pinned) and extended only by append-only amendments A1--A6:
+The protocol was frozen before any
+grid run (SHA-256 hash recorded in the repository) and extended only by
+append-only amendments A1--A6:\footnote{The frozen pre-registration document
+and its amendment log are in the public repository,
+\url{https://github.com/oguzcura/jepa-identifiability-boundary}
+(\texttt{pre\_registration\_2026-09-06.md} and the amendment appendix
+therein).}
 A1 (technical clarifications), A2 (nonlinear mixing, dim 8, recon as
 one-hot-MSE control), A3 (spiral mixing + SIGReg $\lambda{=}10$; official gate
 config), A4 (withdrawal of the invalid L3-v1 world; L3/L4 v2 redesign;
@@ -186,7 +192,7 @@ shows the third condition held.
 
 \section{World ladder and instruments}
 \label{sec:worlds}
-\begin{table}[h]\centering\small
+\begin{table}[ht]\centering\small
 \begin{tabular}{@{}llll@{}}
 \toprule
 Level & Generator & Discreteness control & Ground truth $z$ \\
@@ -236,7 +242,7 @@ latent prediction with SIGReg sketched-Gaussian regularization
 $\tau{=}0.3$ (A3), the non-Gaussian-pressured alignment objective;
 \item \textbf{Input-space reconstruction} (\texttt{recon}) --- autoencoder
 control (no latent objective at all);
-\item \textbf{VICReg} (\texttt{vicreg}, A5) --- variance--invariance--
+\item \textbf{VICReg} (\texttt{vicreg}; introduced in amendment~A5) --- variance--invariance--
 covariance ($25/25/1$, Bardes-style), the theorem's third Fig-4b objective.
 \end{itemize}
 
@@ -263,7 +269,7 @@ toward the uniform extreme ($0.609$ at $\alpha{=}32$). InfoNCE rises to a broad 
 lies at the uniform extreme, so the $\alpha{=}2$ maximum is specific to the
 SIGReg objective. This reproduces Fig.~4b with the theorem's own objective
 (Fig.~\ref{fig:gate}).
-\begin{figure}[h]\centering
+\begin{figure}[ht]\centering
 \includegraphics[width=0.85\linewidth]{../figures/F1_l0_fig4b.png}
 \caption{L0 $\alpha$-sweep, ridge $R^2$ vs.\ gennorm shape. LeJEPA/SIGReg
 peaks at the Gaussian shape ($\alpha{=}2$, $0.851$) and decays toward uniform;
@@ -306,7 +312,7 @@ correct same-metric comparison --- L2's categorical accuracy against L2t's
 accuracy at recovering its own equiprobable $S$ bins ($z_K$) --- the gap
 collapses (Table~\ref{tab:h1a}):
 
-\begin{table}[h]\centering\small
+\begin{table}[ht]\centering\small
 \begin{tabular}{@{}llrrrrrr@{}}
 \toprule
  & & \multicolumn{2}{c}{$S{=}3$} & \multicolumn{2}{c}{$S{=}5$} & \multicolumn{2}{c}{$S{=}10$} \\
@@ -357,7 +363,7 @@ than L3, biasing \emph{against} our claim). Stage 7 ran 30 fresh cells
 stage-4 L3 rows at identical hyperparameters (Table~\ref{tab:h1b},
 Fig.~\ref{fig:h1b}).
 
-\begin{table}[h]\centering\small
+\begin{table}[ht]\centering\small
 \begin{tabular}{@{}lcccc@{}}
 \toprule
  & & \multicolumn{3}{c}{control} \\
@@ -380,7 +386,7 @@ is our most reliable positive finding.}}
 \label{tab:h1b}
 \end{table}
 
-\begin{figure}[h]\centering
+\begin{figure}[ht]\centering
 \includegraphics[width=0.72\linewidth]{../figures/F4_l3_vs_l2m.png}
 \caption{H1b across objectives, post-A6 control. LeJEPA recovers the rule
 grammar (L3) better than the marginal-matched unstructured control (L2mH,
@@ -504,7 +510,8 @@ audits as amendments --- is, we hope, a contribution to how self-supervised
 identifiability gets measured as it moves beyond Gaussians.
 
 \section*{Reproducibility and ethics}
-Code, seeds, and world pins in the repository (TDD suite green: 80 passed);
+Code, seeds, and world pins in the repository; an automated test suite
+(80 checks) passes;
 raw sweep JSONL is retained locally (gitignored) and every committed analysis
 re-runs from \texttt{repro/} against it; pre-registration frozen with
 append-only A1--A6;
@@ -512,9 +519,7 @@ deterministic-seed cells only; zero financial cost (local RTX~4070, 8~GB);
 AI-assisted workflow (experiment design, analysis code, and writing assistance
 with LLM tooling) disclosed per the ethics convention; the author performed
 and bears responsibility for the experimental design, pre-registration, and
-all decisions recorded in amendments. Author line per author-profile rules
-(real name, independent-researcher affiliation, reachable email, GitHub
-handle). The Lean-4 verifications cited from \citet{klindt2026lejepa} are the
+all decisions recorded in amendments. The Lean-4 verifications cited from \citet{klindt2026lejepa} are the
 authors' claims and were not independently re-verified here.
 
 \bibliographystyle{plainnat}
