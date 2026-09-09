@@ -89,19 +89,20 @@ for r in s4:
         print(f"  {r['model']}: per_dim={np.round(r['metrics']['discrete']['per_dim_acc'],3)}")
 
 # --- decoupling per model per clean single-world stage ---
-print("\n=== decoupling index (stage-pooled z) ===")
-def decoup(rows, label, rec_key):
-    preds = [r["metrics"].get("pred_loss") for r in rows if r["metrics"].get("pred_loss") is not None]
-    recs = [r["metrics"].get(rec_key) for r in rows if r["metrics"].get(rec_key) is not None]
-    if not preds or not recs:
+# Uses the committed instrument jepa_id.analyze.decoupling_index (A5/R4:
+# within-stage z over ALL models pooled, pred sign negated so higher = better
+# prediction). An earlier inline copy here recomputed it with an inverted pred
+# sign and a literal 'ridge.mean' nested-key lookup, contradicting the paper;
+# removed 2026-09-09 so paper_numbers has one source of truth.
+print("\n=== decoupling index (A5/R4, stage-pooled z) ===")
+from jepa_id.analyze import decoupling_index
+def decoup(rows, label, stage):
+    d = decoupling_index(rows, stage)
+    if not d:
         print(f"  {label}: missing"); return
-    p = np.array(preds); rc = np.array(recs)
-    zp = (p - p.mean()) / (p.std() + 1e-9); zr = (rc - rc.mean()) / (rc.std() + 1e-9)
-    by = {}
-    for r, zpv, zrv in zip(rows, zp, zr):
-        by.setdefault(r["model"], []).append(zpv - zrv)
-    for model, ds in sorted(by.items()):
-        print(f"  {label} {model:12s}: d={np.mean(ds):+.2f} (n={len(ds)})")
-decoup([r for r in s1b if r["world"] == "L0"], "stage1b(L0)", "ridge.mean")
-decoup([r for r in s3 if r["world"] == "L4"], "stage3(L4)", "linear_probe_acc_mean")
-decoup([r for r in s5 if r["world"] == "L2t"], "stage5(L2t)", "linear_probe_acc_mean")
+    for model, info in sorted(d.items()):
+        print(f"  {label} {model:12s}: d={info['mean_d']:+.2f} "
+              f"CI=[{info['ci'][0]:+.2f},{info['ci'][1]:+.2f}] (n={info['n']})")
+decoup(s1b, "stage1b(L0+L1)", "1b")
+decoup(s3, "stage3(L4)", "3")
+decoup(s5, "stage5(L2t)", "5")

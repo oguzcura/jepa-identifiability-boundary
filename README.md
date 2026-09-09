@@ -23,7 +23,7 @@ Plus L2t (continuous AR(1) twin of L2) and L2m/L2mH/L2mS2 (statistics-matched un
 - **H0:** discreteness = extreme of the existing axis (moment-matching predicts the degradation). — *PASS (gate reproduced Fig 4b).*
 - **H1a:** recovery breaks *worse* than continuous moment-matching predicts — qualitative collapse. — *HONEST NULL* under the A6 same-metric re-scoring: discreteness adds little beyond readout quantization (max gap 0.186 < 0.3 bar).
 - **H1b:** compositional/rule-governed structure buys identifiability independent of the Gaussian mechanism. — *HONEST NULL but robust:* LeJEPA gains **+0.111** (CI [+0.043, +0.179], 5/5 seeds) over the marginal-matched L2mH (2,4,4) control — real, directional, JEPA-specific, below the frozen 0.2 bar. The whole advantage lives in rule-governed affix dimensions.
-- **H2 (insurance):** SIGReg's Gaussian-forcing measurably blurs genuinely discrete clusters. — *HONEST NULL* under AMI (directional recon > jepa in 8/9 cells, one cell clears 0.1).
+- **H2 (insurance):** SIGReg's Gaussian-forcing measurably blurs genuinely discrete clusters. — *HONEST NULL* under AMI (directional recon > jepa in 9/9 cells, one clears 0.1).
 
 ## Results (live-verified, 2026-09-08)
 

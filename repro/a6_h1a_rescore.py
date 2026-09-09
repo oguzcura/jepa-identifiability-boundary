@@ -66,13 +66,20 @@ print(f"\nmax |same-metric gap| across all cells: {worst[0][0]:.3f} "
       f"({worst[0][1]} S={worst[0][2]} d={worst[0][3]})")
 
 # Secondary: ridge R^2 (the metric A5 used) — shown to demonstrate the scale gap
+# NOTE: the paper quotes seed-MEANS here (L2 acc 0.456 vs L2t ridge 0.943);
+# an earlier version printed seed-0 only, which read as a mismatch. Fixed
+# 2026-09-09 to report the 5-seed mean, matching the paper.
 print("\n=== secondary: L2t ridge R^2 at same cells (A5's old metric, for contrast) ===")
 for model in ["jepa"]:
     for S in [10]:
         for dim in [8, 32]:
-            r5 = find(s5, "L2t", model, 0, S, dim)
-            r2 = find(s2, "L2", model, 0, S, dim)
-            if r5 and r2:
-                print(f"  {model} S={S} d={dim}: L2 acc={r2['metrics']['linear_probe_acc_mean']:.3f} "
-                      f"L2t ridge={r5['metrics']['ridge']['mean']:.3f} "
-                      f"L2t zK acc={r5['metrics']['linear_probe_acc_mean']:.3f}")
+            r5s = [find(s5, "L2t", model, s, S, dim) for s in range(5)]
+            r2s = [find(s2, "L2", model, s, S, dim) for s in range(5)]
+            r5s = [r for r in r5s if r]
+            r2s = [r for r in r2s if r]
+            if r5s and r2s:
+                ridge = float(np.mean([r['metrics']['ridge']['mean'] for r in r5s]))
+                acc = float(np.mean([r['metrics']['linear_probe_acc_mean'] for r in r2s]))
+                zK = float(np.mean([r['metrics']['linear_probe_acc_mean'] for r in r5s]))
+                print(f"  {model} S={S} d={dim}: L2 acc={acc:.3f} "
+                      f"L2t ridge={ridge:.3f} L2t zK acc={zK:.3f}")

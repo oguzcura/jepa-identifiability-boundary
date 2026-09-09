@@ -145,7 +145,11 @@ def decoupling_index(rows: list[dict], stage: str) -> dict:
         zr = (rec_all[i] - mu_r) / sd_r
         zp = -(pred_all[i] - mu_p) / sd_p   # higher = better prediction
         d = zp - zr
-        lo, hi = bootstrap_ci(d, seed=model.__hash__() % 2**32)
+        # Deterministic per-model bootstrap seed: str.__hash__() is
+        # process-randomized (PYTHONHASHSEED), which made CI endpoints drift
+        # between runs. crc32 is stable across processes and platforms.
+        import zlib
+        lo, hi = bootstrap_ci(d, seed=zlib.crc32(model.encode("utf-8")))
         out[model] = {"mean_d": float(d.mean()), "ci": (lo, hi),
                       "per_cell": d.tolist(), "n": int(len(d))}
     return out

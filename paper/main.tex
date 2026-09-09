@@ -258,9 +258,10 @@ seeded. $n{=}5$ seeds per reported cell.
 (2-D spiral mixing, $\lambda{=}10$), LeJEPA ridge $R^2$ rises monotonically
 from the heavy-tail region ($0.043$ at $\alpha{=}1/8$) to a peak at the
 Gaussian shape ($\mathbf{0.851}$ at $\alpha{=}2$, $n{=}3$ seeds) and decays
-toward the uniform extreme ($0.609$ at $\alpha{=}32$). InfoNCE peaks at the
-same shape ($0.965$ at $\alpha{=}2$) with the wider plateau noted in the
-source paper. This reproduces Fig.~4b with the theorem's own objective
+toward the uniform extreme ($0.609$ at $\alpha{=}32$). InfoNCE rises to a broad plateau across the Gaussian region
+($0.965$ at $\alpha{=}2$) with no sharp peak --- its sweep maximum ($0.983$)
+lies at the uniform extreme, so the $\alpha{=}2$ maximum is specific to the
+SIGReg objective. This reproduces Fig.~4b with the theorem's own objective
 (Fig.~\ref{fig:gate}).
 \begin{figure}[h]\centering
 \includegraphics[width=0.85\linewidth]{../figures/F1_l0_fig4b.png}
@@ -419,7 +420,7 @@ metric (KMeans purity) sits near its floor for \emph{both} models on
 multi-dimensional categorical embeddings and cannot register the effect
 ($|\text{gap}| \le 0.04$, sign-inconsistent). A6 re-scored on adjusted mutual
 information, the chance-adjusted probe-based instrument: the predicted
-direction appears in 8/9 arms (recon AMI $>$ jepa AMI), and the L2m control
+direction appears in all 9 arms (recon AMI $>$ jepa AMI), and the L2m control
 arm of stage 4 clears the frozen bar ($+0.106$, CI $[0.043,0.169]$), but the
 remaining arms are below it (L2 S-dial $+0.005$--$+0.045$; L4 $+0.045$ ns; L3
 $+0.131$ ns, wide CI). \textbf{H2: honest null} --- the mechanism is
@@ -431,9 +432,11 @@ prescription.
 \label{sec:decoupling}
 A5/R4 defined a stage-pooled index $d_i = -z(\text{pred\_loss}_i) -
 z(\text{recovery}_i)$ over each stage's cells (pooled across models, then
-split per model; A6 verified the pooling). On the three clean single-world
-stages, LeJEPA is consistently and significantly \emph{decoupled}:
-$d = +1.15$ (L0 gate), $+1.47$ (L4), $+1.44$ (L2t) --- it predicts the next
+split per model; A6 verified the pooling). On the three post-gate stages,
+LeJEPA is consistently and significantly \emph{decoupled}:
+$d = +1.15$ (stage 1b --- the gate rerun batch, whose L0-gate and L1-bridge
+cells both read out by ridge $R^2$, so the pooled standardization is
+metric-consistent), $+1.47$ (L4), $+1.44$ (L2t) --- it predicts the next
 state better than stage-average while recovering the ground-truth latent worse.
 InfoNCE mirrors the opposite sign ($-1.15$, $-1.92$, $-1.61$); recon sits near
 zero ($+0.17$ to $+0.46$). The instrument quantifies, on known ground truth,
@@ -502,7 +505,9 @@ identifiability gets measured as it moves beyond Gaussians.
 
 \section*{Reproducibility and ethics}
 Code, seeds, and world pins in the repository (TDD suite green: 80 passed);
-all results JSONL committed; pre-registration frozen with append-only A1--A6;
+raw sweep JSONL is retained locally (gitignored) and every committed analysis
+re-runs from \texttt{repro/} against it; pre-registration frozen with
+append-only A1--A6;
 deterministic-seed cells only; zero financial cost (local RTX~4070, 8~GB);
 AI-assisted workflow (experiment design, analysis code, and writing assistance
 with LLM tooling) disclosed per the ethics convention; the author performed
