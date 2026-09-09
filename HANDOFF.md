@@ -138,6 +138,12 @@ Pre-registration (`pre_registration_2026-09-06.md`) contains hypotheses, decisio
 
 ## 9. Open items & next steps (for the next session)
 
+> Status 2026-09-09: items 1–2 below are CLOSED (title kept, \date finalized,
+> polish pass in §11, pre-submission red-team in
+> `notes/mock_rejection_2026-09-09.md` — its one text fix is applied; its
+> optional raw-JSONL supplementary upload remains the last pre-submission
+> move, plus the arXiv account/endorsement step which needs Oğuz).
+
 **Immediate (arXiv submission prep):**
 1. Abstract/title finalization for arXiv submission (title candidate: "Where Identifiability Breaks: A Discrete Ladder for Joint-Embedding Predictive Architectures")
 2. Author block + `\date`/draft-marker cleanup on the paper
