@@ -227,6 +227,30 @@ Residual (low severity, judgment calls — not fixed):
 - All float specifiers [h]→[ht]; build now 0 LaTeX warnings (tectonic).
 - Release asset main.pdf re-uploaded post-fix (same tag, --clobber).
 
+## 12. TMLR submission template (2026-09-09)
+
+`paper/tmlr/` = separate double-blind TMLR version (original draft untouched;
+`paper/main.tex` remains the de-anonymized preprint/release version).
+- Style kit from JmlrOrg/tmlr-style-file (tmlr.sty, tmlr.bst, math_commands,
+  fancyhdr.sty vendored); body ported programmatically from main.tex; bib =
+  verified main.bib; figures copied (F1, F4 only — the two referenced).
+- `[preprint]`-style de-anon concerns handled: author block = template
+  placeholder `Anonymous author` (sty overrides in review mode anyway);
+  §3 footnote URL de-anonymized ("public repository, released upon
+  acceptance"); reproducibility section likewise.
+- Compile: `cd paper/tmlr && ~/bin/tectonic -X compile main.tex` (or
+  pdflatex). Verified: 9 pp, 0 unresolved citations, References render,
+  Broader Impact present, anonymized (no name/email/handle in PDF text),
+  all key numbers present (0.111/0.081/672).
+- Gotchas fixed during port: (1) enumitem was dropped by the port ->
+  `\begin{enumerate}[...]` blew up ("missing \item"); re-added.
+  (2) port script duplicated `\end{document}` (bibliography/appendix sat
+  after the first one and were silently dropped -> "?" citations).
+- Submission checklist: OpenReview account (parental-consent gate — email
+  support@openreview.net FIRST), TMLR/AOR match, supplementary = pre-reg +
+  audit notes; arXiv preprint version = `paper/main.tex` (do NOT submit the
+  anonymized tmlr build to arXiv).
+
 **Quick resume commands:**
 ```bash
 cd /c/Users/oguzc/research/jepa-identifiability-boundary

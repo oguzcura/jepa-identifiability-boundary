@@ -6,3 +6,8 @@ __pycache__/
 *.log
 paper/*.pdf
 *.blg
+paper/tmlr/*.pdf
+paper/tmlr/*.aux
+paper/tmlr/*.blg
+paper/tmlr/*.log
+paper/tmlr/*.out

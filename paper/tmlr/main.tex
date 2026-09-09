@@ -1,0 +1,542 @@
+% TMLR submission version - ported from the verified repo draft (commit 1d19680).
+% Compile: tectonic main.tex   (US Letter, 10pt, tmlr.sty must remain unmodified)
+%
+% Venue modes:
+%   \usepackage{tmlr}            -> anonymous SUBMISSION (this file)
+%   \usepackage[preprint]{tmlr}  -> de-anonymized for arXiv/repo
+%   \usepackage[accepted]{tmlr}  -> camera-ready (also set \month, \year, \openreview)
+\documentclass[10pt]{article}
+\usepackage{tmlr}
+\input{math_commands.tex}
+\usepackage{xcolor}
+\definecolor{linknavy}{RGB}{30,60,120}
+\usepackage[colorlinks=true, linkcolor=linknavy, citecolor=linknavy, urlcolor=linknavy]{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{enumitem}
+
+\title{Where Identifiability Breaks: A Discrete Ladder for
+Joint-Embedding Predictive Architectures}
+
+% Hidden by tmlr.sty in submission mode; shown with [preprint]/[accepted].
+\author{\name O\u{g}uz Emre Cura \email oguzemrecura@gmail.com
+      \addr Independent Researcher}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\noindent
+The formal identifiability guarantee for Joint-Embedding Predictive
+Architectures (JEPAs) is Gaussian-bound: \citet{klindt2026lejepa} prove in
+Lean~4 that a LeJEPA objective with sketched Gaussian regularization (SIGReg)
+recovers latent states linearly (up to rotation) \emph{if and only if} the
+latents are Gaussian under a stationary OU transition. Real language,
+perception, and world states are neither Gaussian nor continuous --- they are
+categorical, rule-governed, and discrete. This paper maps \emph{how and where}
+identifiability breaks as the latent regime leaves the theorem's boundary,
+using the theorem's own instruments: procedurally generated worlds with
+\emph{known} ground-truth latents and linear-probe readouts. We build a ladder
+of worlds from continuous Gaussian (OU) through discretized Gaussian,
+Markov-chain categories, a rule-governed vowel-harmony grammar, and a Turkish
+orthography (caret-rule) lexicon, and train four objectives (LeJEPA/SIGReg,
+input-space reconstruction, InfoNCE, and VICReg) under a frozen,
+pre-registered protocol with append-only amendments (A1--A6). Four findings,
+all pre-registered, all reported honestly: (i)~the theorem's continuous
+signature reproduces (gate passes at the Gaussian shape); (ii)~recovery
+collapses with state count, but a genuinely discrete latent is recovered no
+worse than a moment-matched continuous latent read out through the same number
+of bins --- discreteness of the \emph{generator} is not a new failure mode
+beyond discreteness of the \emph{readout} (H1a, same-metric null);
+(iii)~compositional rule structure produces a real, JEPA-specific recovery
+advantage ($+0.11$ over a marginal-matched unstructured control, 5/5 seeds)
+that is robust to the control construction but below the pre-registered
+effect-size bar (H1b, honest null); and (iv)~SIGReg's Gaussian forcing does not
+measurably blur discrete clusters under the pre-registered metric (H2, honest
+null), though the predicted direction appears under a chance-adjusted
+instrument. A power analysis shows the frozen bars were detectable at $n{=}5$
+(minimum detectable effect $0.081$), so the nulls are genuine sub-bar effects,
+not underpowered noise. We also introduce a \emph{decoupling index} ---
+prediction quality minus recovery on known ground truth --- which shows LeJEPA
+consistently predicts better than stage-average while recovering worse
+($d{=}{+}1.1$ to $+1.5$), a signature the non-predictive objectives mirror in
+the opposite sign.
+\end{abstract}
+
+\section{Introduction and the theorem's boundary}
+\label{sec:intro}
+The central question for self-supervised world models is identifiability: when
+does an embedding recover the \emph{true} latent state of the world, rather
+than merely a statistically convenient code? For Joint-Embedding Predictive
+Architectures \citep{lecun2022path,assran2023ijepa}, the sharpest formal answer
+to date is \citet{klindt2026lejepa}: under stationary OU dynamics and a
+sketched Gaussian regularizer (SIGReg), a LeJEPA objective recovers the latent
+state \emph{linearly} (up to rotation) if and only if the latents are Gaussian
+(their Thm.~5.1, verified in Lean~4 with zero axioms). Their Fig.~4b gives the
+empirical signature on the generalized-normal family: linear recovery peaks at
+the Gaussian shape ($\alpha=2$) and degrades on both sides toward heavy tails
+and uniform.
+
+Two facts make the boundary scientifically live. First, the theorem's own
+assumptions --- Gaussian, continuous, stationary-OU --- exclude the regime in
+which real data actually lives: language, perception, and world states are
+categorical, rule-governed, and discrete. Whether identifiability \emph{breaks
+gracefully or collapses} below the boundary is an empirical question that the
+formal result, by construction, cannot answer. Second, the continuous
+extension is already being mapped by adjacent work
+(\citet{arya2026,controlledWM2026}; see Sec.~\ref{sec:related}), but the
+discrete generative regime --- categorical latents with known ground truth ---
+remains untested anywhere in the prior literature (verified 2026-09-06; a
+handful of \emph{token}-discrete and symbolic-predictor systems exist, none of
+which measures recovery of known discrete generative latents; see
+Sec.~\ref{sec:related}).
+
+\paragraph{This paper.}
+We map the boundary empirically with the theorem's own instruments. We build a
+ladder of procedurally generated worlds with known ground-truth latents
+(Sec.~\ref{sec:worlds}), train the theorem's objective family
+(Sec.~\ref{sec:objectives}), and measure linear recovery exactly as the theorem
+does (Sec.~\ref{sec:readouts}). Every hypothesis, decision rule, world, and
+effect-size bar was frozen \emph{before} the runs it governs, in an
+append-only pre-registration with six amendments (Sec.~\ref{sec:protocol}); the
+amendments themselves document where our first instruments were wrong and were
+corrected (A4, A6). We report negative and null findings as first-class
+results. All computation ran locally at zero financial cost (single RTX~4070,
+8~GB), 672 deterministic-seed cells, 0 errors.
+
+\paragraph{Contributions.}
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+\item The first discrete ladder (continuous $\to$ binned $\to$ categorical
+$\to$ rule grammar $\to$ orthography lexicon) with known latents and the
+theorem's readouts, under a frozen pre-registered protocol.
+\item A same-metric identifiability instrument for discrete worlds, and the
+finding that genuine discreteness adds little beyond readout quantization:
+categorical states recover about as well as equiprobable bins of a
+moment-matched continuous twin (H1a null under the corrected instrument).
+\item Evidence that compositional rule structure helps \emph{only} the
+predictive objective --- LeJEPA gains $+0.11$ accuracy over an unstructured
+control with identical per-dimension marginals, robust across control
+constructions and 5/5 seeds, but below the pre-registered bar.
+\item The decoupling index: LeJEPA's prediction--recovery gap is large and
+consistently positive ($+1.1$ to $+1.5$ stage-z), quantifying
+``predicting-without-understanding'' on known ground truth.
+\item A self-audit (A6) of our own instruments, demonstrating the
+pre-registration machinery working as intended: an initial ``partial pass''
+(H1a at $S{=}10$) was traced to metric mixing (accuracy vs.\ $R^2$) and
+re-scored as a null on the correct same-metric comparison.
+\end{enumerate}
+
+\section{Related work}
+\label{sec:related}
+\paragraph{Identifiability theory for self-supervised learning.}
+The formal anchor is \citet{klindt2026lejepa} (Gaussian necessary and
+sufficient for linear identifiability of LeJEPA with SIGReg, Lean-4 verified).
+\citet{controlledWM2026} extend the theory to action-conditioned world models
+with joint representation--transition identifiability, still under Gaussian
+latents; the discrete controlled case is the natural residue.
+\citet{interventionalCRL2022} establish the founding premise of causal
+representation learning (latent factors identifiable given perfect
+interventions); our worlds are non-interventional, and we claim no novelty in
+that direction.
+
+\paragraph{Discrete and symbolic JEPA variants.}
+Several systems quantize \emph{encoder outputs} or induce \emph{symbolic
+dynamics}, but none measures recovery of known discrete \emph{generative}
+latents: \citet{discretejepa2025} discretize tokens for reasoning;
+\citet{mcjepa2026} interpret JEPA as a hidden Markov model and add a learned
+transition matrix; \citet{sjepa2026} induce hybrid symbolic--neural predictors;
+\citet{rijepa2026} inject rules into JEPA; \citet{aimprobing2026} probe
+continuous video encoders for emergent discrete structure. \citet{jepaparadox2026}
+analyze the geometry of linguistic alternatives underlying why deterministic
+latent prediction struggles on text. All are adjacent;
+our contribution is the measurement instrument, not a new objective.
+
+\paragraph{Non-Gaussian and dynamics-focused world models.}
+\citet{arya2026} remove Gaussianity but stay in continuous physical systems
+(no categorical generative latents). \citet{nogaussian2026} replace SIGReg with
+contrastive inverse dynamics --- directly relevant to our H2. \citet{phylatent2026}
+taxonomize collapse modes; \citet{uwmjepa2026b,causaljepa2026,dsge2026} study
+belief-space or counterfactual world modeling. \citet{leworldmodel2026} is the
+practical action-conditioned JEPA ancestor. None tests the discrete generative
+regime with known ground truth.
+
+\section{Protocol and pre-registration}
+\label{sec:protocol}
+The protocol was frozen before any
+grid run (SHA-256 hash recorded in a public repository, released with the
+paper upon acceptance) and extended only by
+append-only amendments A1--A6:\footnote{The frozen pre-registration document
+and its amendment log are included in the supplementary material.}
+A1 (technical clarifications), A2 (nonlinear mixing, dim 8, recon as
+one-hot-MSE control), A3 (spiral mixing + SIGReg $\lambda{=}10$; official gate
+config), A4 (withdrawal of the invalid L3-v1 world; L3/L4 v2 redesign;
+entropy-matched L2m control), A5 (VICReg as the fourth objective; L2t
+moment-matched continuous twins; the decoupling index), and A6 (the self-audit:
+same-metric H1a scoring, marginal-matched L2mH control for H1b, AMI-based H2
+scoring, and the power analysis reported in Sec.~\ref{sec:power}).
+All decision rules below are quoted from the frozen text; the frozen
+effect-size bars were \emph{not} moved in any amendment.
+
+The discipline matters because this study's honest outputs are mostly nulls,
+and nulls are only interpretable if the bars were fixed in advance, the
+instruments were validated, and the study was powered. Sec.~\ref{sec:power}
+shows the third condition held.
+
+\section{World ladder and instruments}
+\label{sec:worlds}
+\begin{table}[ht]\centering\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+Level & Generator & Discreteness control & Ground truth $z$ \\
+\midrule
+L0 & Gaussian OU (gennorm $\alpha$) & shape $\alpha \in 2^{-3}\dots 2^5$ &
+continuous \\
+L1 & Discretized Gaussian & bins $K \in \{2,4,8,16\}$ & $z_K$ bins + continuous \\
+L2 & Markov-chain categories & states $S \in \{3,5,10\}$ & categorical $z$ \\
+L2t & Moment-matched twin of L2 (A5) & none (support only) & continuous + $z_K$ \\
+L2mH & Unstructured L2, per-dim $S{=}(2,4,4)$ (A6) & no rule & categorical \\
+L3 & Vowel-harmony rule grammar & rule over 2 suffix slots & rule latents (A4 v2) \\
+L4 & Turkish caret-rule lexicon & negative class present & (stem, caret, vowel) \\
+\bottomrule
+\end{tabular}
+\caption{Worlds. A4 redesigned L3/L4 (non-degenerate, no $z$-leak); A5 added
+L2t; A6 added L2mH --- an unstructured control matching L3's per-dimension
+cardinalities $(2,4,4)$ and chance floors but with \emph{independent} dims
+(joint $H{=}5$ bits, 32 states). L3 v2 itself: 8 joint states, $H{=}3$ bits,
+per-dim $H{=}[1,2,2]$.}
+\label{tab:worlds}
+\end{table}
+
+Every world is a paired-view generator $(x,x')$ with known $z$ and a
+controllable ``discreteness dial.'' L0 is the theorem's own continuous regime;
+L1 (binned Gaussian, $z_K$) is the continuous$\to$discrete bridge; L2 is a
+genuinely categorical Markov chain; L3 v2 is a vowel-harmony grammar whose
+latents obey a cross-position rule (suffix front/back must match the stem
+class); L4 v2 is a curated Turkish lexicon where the latent is
+caret-required-ness with a real negative class. Two design rules, imposed after
+the A4 audit, hold for all discrete worlds: (i)~the latent must have genuine
+variance (checked by empirical entropy), and (ii)~$z$ must never be a literal
+column of $x$ (checked by linear-recoverability probes). L2t is a continuous
+AR(1) twin of L2 with matched observed moments (R1/A5) whose only difference is
+the support of $z$; L2mH (A6) matches L3's per-dimension marginal structure
+without the rule. Table~\ref{tab:worlds} lists the ladder; full generator
+code, seeded, is in the repository.
+
+\section{Objectives and readouts}
+\label{sec:objectives}
+All objectives train on identical paired views $(x,x')$ with shared-MLP
+encoders (equal capacity):
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+\item \textbf{LeJEPA/SIGReg} (\texttt{jepa}) --- the theorem's objective:
+latent prediction with SIGReg sketched-Gaussian regularization
+($\lambda{=}10$ under A3);
+\item \textbf{InfoNCE contrastive} (\texttt{contrastive}) --- alignment with
+$\tau{=}0.3$ (A3), the non-Gaussian-pressured alignment objective;
+\item \textbf{Input-space reconstruction} (\texttt{recon}) --- autoencoder
+control (no latent objective at all);
+\item \textbf{VICReg} (\texttt{vicreg}; introduced in amendment~A5) --- variance--invariance--
+covariance ($25/25/1$, Bardes-style), the theorem's third Fig-4b objective.
+\end{itemize}
+
+\paragraph{Readouts.} \label{sec:readouts}
+On continuous worlds: ridge linear $R^2$ of $z$ from frozen embeddings $h$
+(per-dim + mean), CCA, and a 2-layer MLP control probe. On discrete worlds:
+per-dimension linear-probe top-1 accuracy (mean over dims, chance floor
+$1/S$), adjusted mutual information, and KMeans cluster purity; plus collapse
+metrics (effective rank) and the prediction loss. The A6 audit established the
+metric discipline used throughout: comparisons between a discrete arm and its
+continuous twin must hold the \emph{readout} fixed (same-metric: accuracy vs.\
+accuracy on the twin's equiprobable $z_K$ bins), never compare accuracy against
+$R^2$ on different scales. All readouts are model-agnostic and deterministic
+seeded. $n{=}5$ seeds per reported cell.
+
+\section{Reproduction: the sanity gate (H0)}
+\label{sec:gate}
+\textbf{Official gate: PASS (A3 configuration).} On the L0 $\alpha$-sweep
+(2-D spiral mixing, $\lambda{=}10$), LeJEPA ridge $R^2$ rises monotonically
+from the heavy-tail region ($0.043$ at $\alpha{=}1/8$) to a peak at the
+Gaussian shape ($\mathbf{0.851}$ at $\alpha{=}2$, $n{=}3$ seeds) and decays
+toward the uniform extreme ($0.609$ at $\alpha{=}32$). InfoNCE rises to a broad plateau across the Gaussian region
+($0.965$ at $\alpha{=}2$) with no sharp peak --- its sweep maximum ($0.983$)
+lies at the uniform extreme, so the $\alpha{=}2$ maximum is specific to the
+SIGReg objective. This reproduces Fig.~4b with the theorem's own objective
+(Fig.~\ref{fig:gate}).
+\begin{figure}[ht]\centering
+\includegraphics[width=0.85\linewidth]{figures/F1_l0_fig4b.png}
+\caption{L0 $\alpha$-sweep, ridge $R^2$ vs.\ gennorm shape. LeJEPA/SIGReg
+peaks at the Gaussian shape ($\alpha{=}2$, $0.851$) and decays toward uniform;
+VICReg (stage 6) is flat ($0.975$--$0.987$) --- whitening without
+Gaussianizing.}
+\label{fig:gate}
+\end{figure} \emph{Honest negative retained:} the original A2 configuration
+(quadratic mixing, dim~8, $\lambda{=}1$) failed monotonically (uniform $0.885$
+$>$ Gaussian $0.815$); the failure was traced by experiment to the quadratic
+map's unbounded scale making the observation map uninvertible for the small
+encoder at every $\alpha$ --- the model never entered the theorem's positive
+regime. The instrument was corrected, not the result hidden (both stages on
+disk).
+
+\section{Results}
+\label{sec:results}
+
+\subsection{L1: the continuous$\to$discrete bridge}
+\label{sec:l1}
+Recovery of the binned latent collapses monotonically with the number of bins
+(LeJEPA accuracy $0.899 \to 0.202$ as $K{:}2\to16$, $n{=}10$), while the
+underlying continuous latent stays linearly recoverable at every $K$
+(ridge $R^2 = 0.738$ flat, $n{=}10$). The bridge quantifies exactly what
+discretization costs a linear probe: the bin index is a nonlinear function of
+a linearly recovered continuous code. This is the theorem-consistent baseline
+against which genuine discreteness (L2) must be compared.
+
+\subsection{H1a: is genuine discreteness worse than quantization? (same-metric null)}
+\label{sec:h1a}
+The pre-registered question: do \emph{genuinely categorical} latents (L2,
+Markov chain) break recovery more than any moment-matched continuous analog?
+A5 built L2t, a continuous AR(1) twin of L2 with matched per-dimension
+observed moments and persistence; the only difference is the support of $z$.
+
+The A6 audit found that the first scoring of this test mixed metrics: it
+compared L2's \emph{accuracy} (chance floor $1/S$) against the twin's
+\emph{ridge $R^2$} (chance 0) --- two different scales --- which produced a
+spurious-looking $>0.3$ gap at $S{=}10$ (e.g., $0.456$ vs.\ $0.943$). Under the
+correct same-metric comparison --- L2's categorical accuracy against L2t's
+accuracy at recovering its own equiprobable $S$ bins ($z_K$) --- the gap
+collapses (Table~\ref{tab:h1a}):
+
+\begin{table}[ht]\centering\small
+\begin{tabular}{@{}llrrrrrr@{}}
+\toprule
+ & & \multicolumn{2}{c}{$S{=}3$} & \multicolumn{2}{c}{$S{=}5$} & \multicolumn{2}{c}{$S{=}10$} \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}
+dim & model & L2 & L2t-$z_K$ & L2 & L2t-$z_K$ & L2 & L2t-$z_K$ \\
+\midrule
+8 & jepa & 0.855 & 0.866 & 0.716 & 0.768 & 0.456 & 0.527 \\
+8 & recon & 0.971 & 0.923 & 0.852 & 0.870 & 0.580 & 0.659 \\
+8 & contrastive & 0.884 & 0.919 & 0.711 & 0.893 & 0.539 & 0.725 \\
+32 & jepa & 0.697 & 0.666 & 0.465 & 0.464 & 0.241 & 0.256 \\
+32 & recon & 0.932 & 0.881 & 0.784 & 0.805 & 0.447 & 0.510 \\
+32 & contrastive & 0.920 & 0.877 & 0.784 & 0.767 & 0.479 & 0.451 \\
+\bottomrule
+\end{tabular}
+\caption{H1a same-metric (A6): L2 categorical accuracy vs.\ L2t accuracy at
+recovering its own equiprobable $z_K$ bins. Means over 5 seeds. Largest gap
+across all 18 cells: $0.186$ (contrastive $S{=}10$, d8); LeJEPA never exceeds
+$0.071$. All cells fail the frozen $>0.3$ bar. \textbf{H1a: honest null under
+the corrected instrument.}}
+\label{tab:h1a}
+\end{table}
+
+\paragraph{Interpretation.}
+A genuinely discrete latent is recovered \emph{no worse} than a continuous
+latent of identical moments read out through the same number of classes. The
+one descriptive counter-directional cell --- LeJEPA at $S{=}10$, $d{=}8$
+($0.456$ vs.\ $0.527$) --- is the largest gap against LeJEPA anywhere in the
+table, yet its paired confidence interval includes zero and it sits far below
+the frozen $0.3$ bar, so it is consistent with the null rather than evidence
+against it. The
+collapse with state count (L1 and L2 both fall steeply as $K$ or $S$ grows) is
+therefore a property of the \emph{discrete readout}, not of the discrete
+\emph{generator}. This is the theorem's boundary behaving exactly as its
+continuity argument predicts: the model recovers the continuous code linearly,
+and any nonlinear quantization of that code is what the linear probe cannot
+see. The practical implication is negative for a hoped-for ``discreteness
+cliff'': categorical generative latents do not, by themselves, create a new
+failure mode beyond quantization.
+
+\subsection{H1b: does rule structure buy identifiability? (honest null, directional)}
+\label{sec:h1b}
+The pre-registered claim: rule-governed worlds (L3) recover \emph{better} than
+unstructured categories at matched statistics --- composition itself is a
+resource. A4's first control (L2m, homogeneous $S{=}3$) matched only the
+\emph{mean} marginal entropy; the A6 audit showed the world it paired against
+had 27 joint states vs.\ L3's 8, so the control was state-space mismatched. A6
+therefore added \textbf{L2mH}: an unstructured L2 with per-dimension
+$S{=}(2,4,4)$, reproducing L3's per-dimension marginal entropies
+$[1,2,2]$ and its per-dimension chance floors ($0.5,0.25,0.25$) exactly, with
+independent dims and no rule (joint $H{=}5$ bits, 32 states --- \emph{harder}
+than L3, biasing \emph{against} our claim). Stage 7 ran 30 fresh cells
+(3 models $\times$ 5 seeds $\times$ \{L2mH, L2mS2\}) paired with the existing
+stage-4 L3 rows at identical hyperparameters (Table~\ref{tab:h1b},
+Fig.~\ref{fig:h1b}).
+
+\begin{table}[ht]\centering\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+ & & \multicolumn{3}{c}{control} \\
+\cmidrule(lr){3-5}
+model & $R_{L3}$ & L2m (A4, S3) & \textbf{L2mH (A6, 2,4,4)} & L2mS2 (8 states) \\
+\midrule
+jepa & 0.918 & $+0.113\ (0.051,0.176)$ & $\mathbf{+0.111\ (0.043,0.179)}$ & $+0.010\ ({-}0.059,0.078)$ \\
+recon & 0.808 & $-0.070$ & $-0.115\ ({-}0.193,{-}0.038)$ & $-0.121$ \\
+contrastive & 0.805 & $-0.071$ & $-0.103\ ({-}0.160,{-}0.046)$ & $-0.124$ \\
+\bottomrule
+\end{tabular}
+\caption{H1b, $\Delta{=}R_{L3}-R_{\text{control}}$ with 95\% paired CIs
+($n{=}5$). The JEPA advantage is \emph{robust} to the control fix ($+0.111$ vs.\
+$+0.113$ under the state-mismatched A4 control), is positive in 5/5 seeds
+(deltas $+0.074,+0.151,+0.072,+0.187,+0.069$), and vanishes only against the
+all-binary 8-state bracket whose per-dimension probes are trivially easier
+(chance $0.5$; not an acc-comparable control). \textbf{H1b: honest null at the
+frozen $\Delta{>}0.2$ bar --- but the directional, control-robust JEPA effect
+is our most reliable positive finding.}}
+\label{tab:h1b}
+\end{table}
+
+\begin{figure}[ht]\centering
+\includegraphics[width=0.72\linewidth]{figures/F4_l3_vs_l2m.png}
+\caption{H1b across objectives, post-A6 control. LeJEPA recovers the rule
+grammar (L3) better than the marginal-matched unstructured control (L2mH,
+per-dim $(2,4,4)$, independent dims); recon and contrastive do not. Bars are
+mean $\pm$~SE over five seeds.}
+\label{fig:h1b}
+\end{figure}
+
+\paragraph{Where the effect lives.}
+Per-dimension readouts (5-seed means) show the stem class --- the
+surface-visible latent --- is recovered equally by all three objectives
+(LeJEPA $0.876$, recon $0.914$, contrastive $0.929$). LeJEPA's entire advantage
+sits in the two \emph{rule-governed} 4-way affix dims ($0.947$, $0.932$ vs.\
+recon $0.758$, $0.752$ and contrastive $0.735$, $0.751$). Composition helps
+exactly where the harmony rule constrains the suffix vowel --- and it helps
+only the objective that must \emph{predict} under that rule.
+
+\subsection{L4: Turkish caret rule, and VICReg}
+\label{sec:l4}
+L4 v2 (matched negative class, surface-only observations) ran clean
+(15/15, 0 errors): LeJEPA accuracy $0.705$, recon $0.772$, contrastive
+$0.792$ ($n{=}5$) --- far below the v1 (invalid) ceiling, i.e., the world
+discriminates. VICReg (A5), the theorem's third Fig-4b objective, shows
+\textbf{no sharp $\alpha{=}2$ peak} on L0: recovery rises to a plateau
+($0.987$ at $\alpha{=}2$) and stays flat through the uniform extreme ($0.975$
+at $\alpha{=}32$) --- its variance hinge whitens but does not Gaussianize, so
+bounded uniform latents stay recoverable. On the discrete ladder VICReg
+mirrors the non-predictive objectives: no structure benefit at L3 ($0.714$ vs.\
+L2m $0.881$, $\Delta{-}0.167$), steep L2 collapse ($0.840\to0.452$,
+$S{:}3\to10$), L4 $0.730$ (descriptive only, no H-test, per A5).
+
+\subsection{H2: does SIGReg blur discrete clusters? (honest null under AMI)}
+\label{sec:h2}
+H2 was insurance: SIGReg's Gaussian forcing should measurably blur discrete
+clusters, making recon's cluster purity exceed LeJEPA's by $>0.1$. The frozen
+metric (KMeans purity) sits near its floor for \emph{both} models on
+multi-dimensional categorical embeddings and cannot register the effect
+($|\text{gap}| \le 0.04$, sign-inconsistent). A6 re-scored on adjusted mutual
+information, the chance-adjusted probe-based instrument: the predicted
+direction appears in all 9 arms (recon AMI $>$ jepa AMI), and the L2m control
+arm of stage 4 clears the frozen bar ($+0.106$, CI $[0.043,0.169]$), but the
+remaining arms are below it (L2 S-dial $+0.005$--$+0.045$; L4 $+0.045$ ns; L3
+$+0.131$ ns, wide CI). \textbf{H2: honest null} --- the mechanism is
+directionally present but does not meet the pre-registered bar; consistent
+with \citet{nogaussian2026}, which motivates replacing SIGReg's Gaussian
+prescription.
+
+\subsection{The decoupling index: predicting without understanding}
+\label{sec:decoupling}
+A5/R4 defined a stage-pooled index $d_i = -z(\text{pred\_loss}_i) -
+z(\text{recovery}_i)$ over each stage's cells (pooled across models, then
+split per model; A6 verified the pooling). On the three post-gate stages,
+LeJEPA is consistently and significantly \emph{decoupled}:
+$d = +1.15$ (stage 1b --- the gate rerun batch, whose L0-gate and L1-bridge
+cells both read out by ridge $R^2$, so the pooled standardization is
+metric-consistent), $+1.47$ (L4), $+1.44$ (L2t) --- it predicts the next
+state better than stage-average while recovering the ground-truth latent worse.
+InfoNCE mirrors the opposite sign ($-1.15$, $-1.92$, $-1.61$); recon sits near
+zero ($+0.17$ to $+0.46$). The instrument quantifies, on known ground truth,
+the ``world model that predicts without understanding'' failure that
+motivates identifiability analysis.
+
+\section{Power analysis: the bars were fair}
+\label{sec:power}
+A null is only interpretable if the study could have detected the pre-registered
+effect. For the paired per-seed deltas ($n{=}5$, $\alpha{=}0.05$ two-sided,
+observed within-condition sd ${\approx}0.05$), the minimum detectable effect at
+80\% power is \textbf{0.081}. The frozen H1b bar ($0.2$) had essentially 100\%
+power; even the \emph{observed} $+0.113$ had 99\% power; the H1a bar ($0.3$)
+and H2 bar ($0.1$) likewise $>99$\%. Power was never the reason for the nulls:
+the effects are genuinely smaller than the a priori bars. Conversely, the tight
+CIs (half-width ${\pm}0.062$ at the observed sd) mean the directional JEPA
+effect is measured precisely --- it is a real $\approx0.11$ advantage, not an
+unresolved near-zero.
+
+\section{Discussion}
+\label{sec:discussion}
+\paragraph{What is new.}
+A measurement contribution: the first discrete ladder for JEPA identifiability
+with known ground truth, under a protocol that lets the nulls speak. Three
+pre-registered hypotheses came back null (H1a same-metric, H1b at bar, H2),
+and the nulls are informative: discreteness of the generator is not a distinct
+failure mode beyond readout quantization; composition gives the predictive
+objective a real but sub-bar advantage; SIGReg's cluster blur is sub-bar under
+the corrected instrument. The decoupling index is a new, cheap instrument for
+a failure mode --- predicting well while recovering badly --- that prior work
+discusses but does not measure on known latents.
+
+\paragraph{What we got wrong, and what the machinery did about it.}
+Three instrument failures on our side were found and fixed by audit, not by
+peeking: (i)~the A4 L2m control matched mean marginal entropy but not the joint
+state space (27 vs.\ 8 states) --- fixed by L2mH; the effect estimate was
+unchanged, which is evidence of robustness rather than of nothing;
+(ii)~H1a's first scoring compared accuracy to $R^2$ on different scales,
+manufacturing a ``partial pass'' --- re-scored same-metric, it is a null;
+(iii)~H2's purity metric sat at the floor for both models --- AMI sees the
+predicted direction. Each correction was registered as an amendment before the
+corrected runs, and each corrected result is on disk. The pre-registered bars
+were never moved; the power analysis (Sec.~\ref{sec:power}) confirms they were
+reachable.
+
+\paragraph{Limitations.}
+(1)~$n{=}5$ seeds: adequate for the effect sizes here (Sec.~\ref{sec:power})
+but small for the high-variance L3 AMI arm. (2)~The L3 grammar is one
+construction; Turkish morphology (L4) is real but small. (3)~Linear-probe
+recovery is the theorem's readout but not the only one; AMI, purity, and
+nonlinear probes disagree in places, and the disagreement is itself
+instructive. (4)~All worlds are static paired-view generators; action
+conditioning is the controlled case (see \citet{controlledWM2026}).
+(5)~Discrete worlds tested up to $S{=}10$ and 3-bit grammars; the regime
+beyond is untested. (6)~H1b's frozen bar ($\Delta{>}0.2$ on accuracy) may be
+large for the mechanism; a future pre-registration could size an effect from
+the now-published $+0.11$ estimate.
+
+\paragraph{What is open.}
+The composition signal deserves a dedicated study: stronger grammars, deeper
+rule hierarchies, and effect-size bars sized from this paper's estimate.
+The decoupling index should be tested under action-conditioned objectives.
+And the honest-null template --- frozen bars, powered nulls, instrument
+audits as amendments --- is, we hope, a contribution to how self-supervised
+identifiability gets measured as it moves beyond Gaussians.
+
+\section*{Reproducibility and ethics}
+Code, seeds, and world pins in the repository; an automated test suite
+(80 checks) passes;
+raw sweep JSONL is retained locally (gitignored) and every committed analysis
+re-runs from \texttt{repro/} against it; pre-registration frozen with
+append-only A1--A6;
+deterministic-seed cells only; zero financial cost (local RTX~4070, 8~GB);
+AI-assisted workflow (experiment design, analysis code, and writing assistance
+with LLM tooling) disclosed per the ethics convention; the author performed
+and bears responsibility for the experimental design, pre-registration, and
+all decisions recorded in amendments. The Lean-4 verifications cited from \citet{klindt2026lejepa} are the
+authors' claims and were not independently re-verified here.
+
+\subsubsection*{Broader Impact Statement}
+This is a measurement study on synthetic worlds with known ground truth; it
+trains only small encoders on procedurally generated data and introduces no
+deployment-facing system. We see no plausible path to direct harm from the
+findings. If anything, the paper's contribution is methodological hygiene for
+representation-learning claims: pre-registered, falsifiable decision rules,
+power analysis, and honest reporting of sub-bar effects. The decoupling index
+could be used as a cheap diagnostic on production embeddings, which we view
+as a benefit; misuse would be limited to over-reading its verdicts outside
+the regime where ground truth exists, a limitation the paper states
+explicitly.
+
+\bibliography{main}
+\bibliographystyle{tmlr}
+
+\end{document}
