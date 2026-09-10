@@ -14,18 +14,18 @@ Empiricizes the Klindt–LeCun–Balestriero identifiability theorem (LeJEPA rec
 | L1 | Discretized Gaussian (K bins) | Bridge: is discreteness "very non-Gaussian" or a different failure? |
 | L2 | Markov-chain latents | Does "stationary but discrete" get any guarantee? |
 | L3 | Toy rule-governed grammar | Rule-structure with complete ground truth |
-| L4 | Turkish orthography/morphology | The real case — Imla's rule set as ground truth |
+| L4 | Turkish orthography/morphology | The real case — ground truth from the Imla Turkish orthography caret-rule set (companion project) |
 
 Plus L2t (continuous AR(1) twin of L2) and L2m/L2mH/L2mS2 (statistics-matched unstructured controls, A4/A6).
 
 ## Hypotheses (pre-registered, frozen 2026-09-06)
 
 - **H0:** discreteness = extreme of the existing axis (moment-matching predicts the degradation). — *PASS (gate reproduced Fig 4b).*
-- **H1a:** recovery breaks *worse* than continuous moment-matching predicts — qualitative collapse. — *HONEST NULL* under the A6 same-metric re-scoring: discreteness adds little beyond readout quantization (max gap 0.186 < 0.3 bar).
-- **H1b:** compositional/rule-governed structure buys identifiability independent of the Gaussian mechanism. — *HONEST NULL but robust:* LeJEPA gains **+0.111** (CI [+0.043, +0.179], 5/5 seeds) over the marginal-matched L2mH (2,4,4) control — real, directional, JEPA-specific, below the frozen 0.2 bar. The whole advantage lives in rule-governed affix dimensions.
-- **H2 (insurance):** SIGReg's Gaussian-forcing measurably blurs genuinely discrete clusters. — *HONEST NULL* under AMI (directional recon > jepa in 9/9 cells, one clears 0.1).
+- **H1a:** recovery breaks *worse* than continuous moment-matching predicts — qualitative collapse. — *Honest-null result* under the A6 same-metric re-scoring: discreteness adds little beyond readout quantization (max gap 0.186 < 0.3 bar).
+- **H1b:** compositional/rule-governed structure buys identifiability independent of the Gaussian mechanism. — *Honest null but robust:* LeJEPA gains **+0.111** (CI [+0.043, +0.179], 5/5 seeds) over the marginal-matched L2mH (2,4,4) control — real, directional, JEPA-specific, below the frozen 0.2 bar. The whole advantage lives in rule-governed affix dimensions.
+- **H2 (insurance):** SIGReg's Gaussian-forcing measurably blurs genuinely discrete clusters. — *Honest-null result* under AMI (directional recon > jepa in 9/9 cells, one clears 0.1).
 
-## Results (live-verified, 2026-09-08)
+## Results (verified against the repository results, 2026-09-08)
 
 - **672 cells / 0 errors** across 9 stage files (pilot–stage 7), local RTX 4070, $0 compute.
 - Full audit of the instrument nulls (own-side metric mixing, control mismatch, H2 instrument blindness) in `notes/audit_null_diagnosis_2026-09-08.md`; corrections frozen as Amendment A6 before any control cell ran (`pre_registration_2026-09-06.md`, append-only A1–A6).
@@ -40,7 +40,24 @@ uv run pytest tests/ -q        # 80 passed
 uv run python repro/figures.py # regenerate figures/ from results/*.jsonl (needs local data)
 ```
 
-Pre-registration (frozen + amendments A1–A6), per-stage notes, and the audit trail live in the repo. Paper draft: `paper/main.tex` (compiles with tectonic), references live-verified via the arXiv `id_list` protocol.
+Pre-registration (frozen + amendments A1–A6), per-stage notes, and the audit trail live in the repo. Paper draft: `paper/main.tex` (compiles with tectonic), references verified via the arXiv `id_list` protocol.
+
+## Citation
+
+If you use this work, please cite the paper:
+
+```bibtex
+@unpublished{cura2026boundary,
+  author = {Cura, O\u{g}uz Emre},
+  title  = {Empirical boundary-mapping of the {Klindt--LeCun--Balestriero}
+            Gaussian-identifiability theorem for {Joint-Embedding
+            Predictive Architectures}},
+  year   = {2026},
+  note   = {Preprint. Code and results: https://github.com/oguzcura/jepa-identifiability-boundary}
+}
+```
+
+Machine-readable metadata is in [`CITATION.cff`](CITATION.cff) (read by GitHub's "Cite this repository" button).
 
 ## License
 

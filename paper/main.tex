@@ -92,7 +92,7 @@ formal result, by construction, cannot answer. Second, the continuous
 extension is already being mapped by adjacent work
 (\citet{arya2026,controlledWM2026}; see Sec.~\ref{sec:related}), but the
 discrete generative regime --- categorical latents with known ground truth ---
-remains untested anywhere in the prior literature (verified 2026-09-06; a
+remains untested anywhere in the prior literature (as of this writing; a
 handful of \emph{token}-discrete and symbolic-predictor systems exist, none of
 which measures recovery of known discrete generative latents; see
 Sec.~\ref{sec:related}).
@@ -260,7 +260,8 @@ seeded. $n{=}5$ seeds per reported cell.
 
 \section{Reproduction: the sanity gate (H0)}
 \label{sec:gate}
-\textbf{Official gate: PASS (A3 configuration).} On the L0 $\alpha$-sweep
+\textbf{Official gate: PASS} (gate configuration: $n{=}3$ seeds per A3,
+vs.\ $n{=}5$ for reported cells). On the L0 $\alpha$-sweep
 (2-D spiral mixing, $\lambda{=}10$), LeJEPA ridge $R^2$ rises monotonically
 from the heavy-tail region ($0.043$ at $\alpha{=}1/8$) to a peak at the
 Gaussian shape ($\mathbf{0.851}$ at $\alpha{=}2$, $n{=}3$ seeds) and decays
@@ -527,6 +528,7 @@ and bears responsibility for the experimental design, pre-registration, and
 all decisions recorded in amendments. The Lean-4 verifications cited from \citet{klindt2026lejepa} are the
 authors' claims and were not independently re-verified here.
 
+\setlength{\bibsep}{6pt}
 \bibliographystyle{plainnat}
 \bibliography{custom}
 \end{document}

@@ -1,0 +1,41 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite it as below."
+type: software
+title: "jepa-identifiability-boundary: Empirical boundary-mapping of the Klindt–LeCun–Balestriero Gaussian-identifiability theorem for Joint-Embedding Predictive Architectures"
+authors:
+  - given-names: Oğuz Emre
+    family-names: Cura
+    email: oguzemrecura@gmail.com
+    affiliation: "Independent Researcher"
+    website: "https://github.com/oguzcura"
+repository-code: "https://github.com/oguzcura/jepa-identifiability-boundary"
+license: MIT
+keywords:
+  - joint-embedding predictive architecture
+  - identifiability
+  - self-supervised learning
+  - pre-registration
+  - reproducibility
+abstract: >-
+  Empirically maps how and where the Klindt–LeCun–Balestriero
+  Gaussian-identifiability theorem for Joint-Embedding Predictive
+  Architectures breaks as the latent regime leaves the theorem's
+  Gaussian boundary. A ladder of procedurally generated worlds with
+  known ground-truth latents (continuous Gaussian, discretized
+  Gaussian, Markov-chain categories, a rule-governed grammar, and a
+  Turkish orthography caret-rule lexicon) is trained under four
+  JEPA-family objectives with a frozen, pre-registered protocol
+  (append-only amendments A1–A6), reporting all outcomes including
+  honest nulls.
+date-released: "2026-09-10"
+version: "1.0.0"
+preferred-citation:
+  type: unpublished
+  title: "Empirical boundary-mapping of the Klindt–LeCun–Balestriero Gaussian-identifiability theorem for Joint-Embedding Predictive Architectures"
+  authors:
+    - given-names: Oğuz Emre
+      family-names: Cura
+      email: oguzemrecura@gmail.com
+      affiliation: "Independent Researcher"
+  year: 2026
+  notes: "Preprint. Code and results: https://github.com/oguzcura/jepa-identifiability-boundary"
